@@ -1,0 +1,14 @@
+node_modules/
+backend/venv/
+worker/venv/
+venv/
+downloads/
+frames/
+__pycache__/
+*.env
+.env
+result_*.json
+queue.json
+.DS_Store
+dist/
+build/
