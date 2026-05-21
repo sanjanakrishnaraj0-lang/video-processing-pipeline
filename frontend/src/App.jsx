@@ -20,7 +20,7 @@ function App() {
     if (videoId && isProcessing) {
       interval = setInterval(async () => {
         try {
-          const { data } = await axios.get(`http://localhost:8000/result/${videoId}`)
+          const { data } = await axios.get(`https://video-processing-pipeline.onrender.com/result/${videoId}`)
           if (data.status === 'complete') {
             setResultData(data.data)
             setIsProcessing(false)
@@ -81,7 +81,7 @@ function App() {
       formData.append('file', file)
       formData.append('user_id', 'user_demo')
 
-      const { data } = await axios.post('http://localhost:8000/upload', formData, {
+      const { data } = await axios.post('https://video-processing-pipeline.onrender.com/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
