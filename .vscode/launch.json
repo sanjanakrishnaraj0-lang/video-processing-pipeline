@@ -23,6 +23,13 @@
       "program": "local_consumer.py",
       "cwd": "${workspaceFolder:Worker (Python)}",
       "python": "${workspaceFolder:Worker (Python)}/venv/Scripts/python.exe"
+    },
+    {
+      "name": "Debug React Frontend (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder:Frontend (React)}/src"
     }
   ],
   "compounds": [
@@ -31,6 +38,14 @@
       "configurations": [
         "Debug FastAPI Backend",
         "Debug Local Worker"
+      ]
+    },
+    {
+      "name": "Debug Full Stack (Backend + Worker + Frontend)",
+      "configurations": [
+        "Debug FastAPI Backend",
+        "Debug Local Worker",
+        "Debug React Frontend (Chrome)"
       ]
     }
   ]
