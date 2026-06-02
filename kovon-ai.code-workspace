@@ -1,0 +1,31 @@
+{
+  "folders": [
+    {
+      "name": "Kovon AI (Root)",
+      "path": "."
+    },
+    {
+      "name": "Frontend (React)",
+      "path": "frontend"
+    },
+    {
+      "name": "Backend (FastAPI)",
+      "path": "backend"
+    },
+    {
+      "name": "Worker (Python)",
+      "path": "worker"
+    }
+  ],
+  "settings": {
+    "python.defaultInterpreterPath": "${workspaceFolder:Worker (Python)}/venv/Scripts/python.exe",
+    "files.exclude": {
+      "**/golden_dataset/**/*.jpg": true,
+      "**/golden_dataset/**/*.jpeg": true,
+      "**/golden_dataset/**/*.png": true,
+      "**/frames/**/*.jpg": true,
+      "**/frames/**/*.jpeg": true,
+      "**/frames/**/*.png": true
+    }
+  }
+}

@@ -5,6 +5,8 @@ import './App.css'
 
 function App() {
   const [file, setFile] = useState(null)
+  const [videoUrl, setVideoUrl] = useState('')
+  const [goldenStandard, setGoldenStandard] = useState('')
   const [isDragging, setIsDragging] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [status, setStatus] = useState({ type: '', message: '' })
@@ -20,7 +22,7 @@ function App() {
     if (videoId && isProcessing) {
       interval = setInterval(async () => {
         try {
-          const { data } = await axios.get(`https://video-processing-pipeline.onrender.com/result/${videoId}`)
+          const { data } = await axios.get(`http://localhost:8001/result/${videoId}`)
           if (data.status === 'complete') {
             setResultData(data.data)
             setIsProcessing(false)
@@ -69,7 +71,7 @@ function App() {
   }
 
   const handleUpload = async () => {
-    if (!file) return
+    if (!file && !videoUrl.trim()) return
 
     setIsUploading(true)
     setUploadProgress(0)
@@ -77,25 +79,45 @@ function App() {
     setResultData(null)
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('user_id', 'user_demo')
-
-      const { data } = await axios.post('https://video-processing-pipeline.onrender.com/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
-          setUploadProgress(percentCompleted)
+      if (file) {
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('user_id', 'user_demo')
+        if (goldenStandard) {
+          formData.append('golden_standard', goldenStandard)
         }
-      })
 
-      if (data.status === 'success') {
-        setVideoId(data.video_id)
-        setIsProcessing(true)
-        setStatus({ 
-          type: 'success', 
-          message: 'Video uploaded successfully! The AI is now analyzing it...' 
+        const { data } = await axios.post('http://localhost:8001/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            setUploadProgress(percentCompleted)
+          }
         })
+
+        if (data.status === 'success') {
+          setVideoId(data.job_id)
+          setIsProcessing(true)
+          setStatus({ 
+            type: 'success', 
+            message: 'Video uploaded successfully! The AI is now analyzing it...' 
+          })
+        }
+      } else {
+        const { data } = await axios.post('http://localhost:8001/upload-url', {
+          video_url: videoUrl,
+          user_id: 'user_demo',
+          golden_standard: goldenStandard || null
+        })
+
+        if (data.status === 'success') {
+          setVideoId(data.job_id)
+          setIsProcessing(true)
+          setStatus({ 
+            type: 'success', 
+            message: 'Video URL submitted successfully! The AI is now analyzing it...' 
+          })
+        }
       }
       
     } catch (error) {
@@ -119,8 +141,10 @@ function App() {
 
   const resetUpload = () => {
     setFile(null)
+    setVideoUrl('')
     setVideoId(null)
     setResultData(null)
+    setGoldenStandard('')
     setStatus({ type: '', message: '' })
   }
 
@@ -133,7 +157,24 @@ function App() {
 
       {!resultData ? (
         <div className="glass upload-card animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          {!file ? (
+          
+          {file ? (
+            <div className="selected-file">
+              <FileVideo size={40} color="var(--accent)" />
+              <div className="file-info">
+                <span className="file-name">{file.name}</span>
+                <span className="file-size">{formatFileSize(file.size)}</span>
+              </div>
+              {!isUploading && !isProcessing && (
+                <button 
+                  onClick={() => setFile(null)} 
+                  className="btn-remove"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          ) : (
             <div 
               className={`upload-area ${isDragging ? 'active' : ''}`}
               onDragOver={handleDragOver}
@@ -149,53 +190,83 @@ function App() {
               <input 
                 type="file" 
                 className="file-input" 
+                style={{ display: 'none' }}
                 ref={fileInputRef}
                 onChange={handleFileSelect}
                 accept="video/*"
               />
             </div>
-          ) : (
-            <div className="selected-file">
-              <FileVideo size={40} color="var(--accent)" />
-              <div className="file-info">
-                <span className="file-name">{file.name}</span>
-                <span className="file-size">{formatFileSize(file.size)}</span>
-              </div>
-              {!isUploading && !isProcessing && (
-                <button 
-                  onClick={() => setFile(null)} 
-                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                >
-                  ✕
-                </button>
-              )}
-            </div>
           )}
 
-          {isUploading && (
-            <div className="progress-container">
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+          {!file && !isProcessing && (
+            <>
+              <div className="select-standard-container">
+                <select 
+                  className="select-standard"
+                  value={goldenStandard}
+                  onChange={(e) => setGoldenStandard(e.target.value)}
+                  disabled={isUploading}
+                >
+                  <option value="">Select a Golden Reference Standard (Optional)</option>
+                  <option value="plumbing">Plumbing Golden Standard</option>
+                  <option value="electrical">Electrical Golden Standard</option>
+                  <option value="building_plumbing">Building Plumbing Golden Standard</option>
+                </select>
+              </div>
+
+              <div className="or-divider">— OR —</div>
+
+              <div className="url-input-container">
+                <input 
+                  type="text" 
+                  className="url-input"
+                  placeholder="Paste S3 Video URL here..." 
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  disabled={isUploading}
+                />
+              </div>
+            </>
+          )}
+
+          {isUploading && uploadProgress > 0 && (
+            <div className="progress-wrap">
+              <div className="progress-label">
                 <span>Uploading...</span>
                 <span>{uploadProgress}%</span>
               </div>
-              <div className="progress-bar">
+              <div className="progress-track">
                 <div className="progress-fill" style={{ width: `${uploadProgress}%` }}></div>
               </div>
             </div>
           )}
 
           {!isProcessing && (
-            <button 
-              className="btn-primary" 
-              onClick={handleUpload}
-              disabled={!file || isUploading}
-            >
-              {isUploading ? (
-                <><Loader2 className="animate-spin" size={20} /> Uploading...</>
-              ) : (
-                <><PlaySquare size={20} /> Analyze Video</>
-              )}
-            </button>
+            file ? (
+              <button 
+                className="btn-primary" 
+                onClick={handleUpload}
+                disabled={isUploading}
+              >
+                {isUploading ? (
+                  <><Loader2 className="animate-spin" size={20} /> Uploading...</>
+                ) : (
+                  <><PlaySquare size={20} /> Analyze Video</>
+                )}
+              </button>
+            ) : (
+              <button 
+                className="btn-primary" 
+                onClick={handleUpload}
+                disabled={isUploading || !videoUrl.trim()}
+              >
+                {isUploading ? (
+                  <><Loader2 className="animate-spin" size={20} /> Uploading...</>
+                ) : (
+                  <><PlaySquare size={20} /> Analyze URL</>
+                )}
+              </button>
+            )
           )}
 
           {isProcessing && (

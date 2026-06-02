@@ -4,3 +4,6 @@ boto3
 python-dotenv
 pydantic
 python-multipart
+python-docx
+openpyxl
+pypdf

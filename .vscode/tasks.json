@@ -1,0 +1,60 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start FastAPI Backend",
+      "type": "shell",
+      "command": ".\\venv\\Scripts\\uvicorn main:app --reload --port 8001",
+      "options": {
+        "cwd": "${workspaceFolder:Backend (FastAPI)}"
+      },
+      "presentation": {
+        "group": "kovon-ai-services",
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Start Local Worker",
+      "type": "shell",
+      "command": ".\\venv\\Scripts\\python local_consumer.py",
+      "options": {
+        "cwd": "${workspaceFolder:Worker (Python)}"
+      },
+      "presentation": {
+        "group": "kovon-ai-services",
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Start React Frontend",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder:Frontend (React)}"
+      },
+      "presentation": {
+        "group": "kovon-ai-services",
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Start All Services Concurrently",
+      "dependsOn": [
+        "Start FastAPI Backend",
+        "Start Local Worker",
+        "Start React Frontend"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    }
+  ]
+}

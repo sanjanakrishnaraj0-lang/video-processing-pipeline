@@ -7,4 +7,4 @@ python local_consumer.py &
 
 # Start the FastAPI backend in the foreground
 cd ../backend
-uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+uvicorn main:app --host 0.0.0.0 --port ${PORT:-8001}

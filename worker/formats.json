@@ -1,0 +1,131 @@
+[
+  {
+    "id": "video_training_default",
+    "name": "Video Training Analysis",
+    "agent_type": "video",
+    "fields": [
+      {
+        "key": "skill_score",
+        "label": "Skill Score (0-100)",
+        "type": "number",
+        "description": "Overall skill score out of 100"
+      },
+      {
+        "key": "missing_steps",
+        "label": "Missing Steps",
+        "type": "list",
+        "description": "Steps skipped or done incorrectly"
+      },
+      {
+        "key": "safety_violations",
+        "label": "Safety Violations",
+        "type": "list",
+        "description": "PPE or safety rule violations"
+      },
+      {
+        "key": "mcqs",
+        "label": "Quiz Questions (MCQs)",
+        "type": "mcq",
+        "description": "2 multiple choice questions"
+      }
+    ]
+  },
+  {
+    "id": "resume_standard",
+    "name": "Resume Standard Analysis",
+    "agent_type": "resume",
+    "fields": [
+      {
+        "key": "overall_score",
+        "label": "Overall Score (0-100)",
+        "type": "number",
+        "description": "Candidate overall score"
+      },
+      {
+        "key": "technical_skills",
+        "label": "Technical Skills",
+        "type": "list",
+        "description": "List of technical skills found"
+      },
+      {
+        "key": "soft_skills",
+        "label": "Soft Skills",
+        "type": "list",
+        "description": "Communication, leadership etc."
+      },
+      {
+        "key": "experience_years",
+        "label": "Years of Experience",
+        "type": "number",
+        "description": "Total years of work experience"
+      },
+      {
+        "key": "education_level",
+        "label": "Education Level",
+        "type": "text",
+        "description": "Highest qualification"
+      },
+      {
+        "key": "strengths",
+        "label": "Key Strengths",
+        "type": "list",
+        "description": "Strong points of the candidate"
+      },
+      {
+        "key": "red_flags",
+        "label": "Red Flags",
+        "type": "list",
+        "description": "Concerns or gaps"
+      },
+      {
+        "key": "hire_recommendation",
+        "label": "Hire Recommendation",
+        "type": "text",
+        "description": "Yes / No / Maybe with reason"
+      }
+    ]
+  },
+  {
+    "id": "report_summary",
+    "name": "Report Summary Analysis",
+    "agent_type": "report",
+    "fields": [
+      {
+        "key": "summary",
+        "label": "Executive Summary",
+        "type": "text",
+        "description": "Short summary of the document"
+      },
+      {
+        "key": "key_findings",
+        "label": "Key Findings",
+        "type": "list",
+        "description": "Main findings or data points"
+      },
+      {
+        "key": "risks",
+        "label": "Risks / Issues",
+        "type": "list",
+        "description": "Problems or risks identified"
+      },
+      {
+        "key": "recommendations",
+        "label": "Recommendations",
+        "type": "list",
+        "description": "Suggested actions"
+      },
+      {
+        "key": "sentiment",
+        "label": "Overall Sentiment",
+        "type": "text",
+        "description": "Positive / Neutral / Negative"
+      },
+      {
+        "key": "confidence_score",
+        "label": "Confidence Score (0-100)",
+        "type": "number",
+        "description": "AI confidence in analysis"
+      }
+    ]
+  }
+]
