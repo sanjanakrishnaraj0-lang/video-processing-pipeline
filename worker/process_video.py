@@ -13,6 +13,15 @@ from agents.format_manager import get_format_by_id, build_prompt_for_format, DEF
 # Load environment variables
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
 
+# Load domain standard prompts and fallbacks
+STANDARDS_FILE = os.path.join(os.path.dirname(__file__), "domain_standards.json")
+try:
+    with open(STANDARDS_FILE, "r", encoding="utf-8") as f:
+        DOMAIN_STANDARDS = json.load(f)
+except Exception as e:
+    print(f"Warning: could not load domain standards from {STANDARDS_FILE}: {e}")
+    DOMAIN_STANDARDS = {}
+
 # Configure Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
@@ -42,7 +51,7 @@ def extract_frames(video_path: str, output_dir: str):
         "-vf", "fps=1/3",
         os.path.join(output_dir, "output_%04d.jpg")
     ]
-    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+    subprocess.run(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
     print("Frames extracted.")
 
 
@@ -53,7 +62,7 @@ def extract_audio(video_path: str, output_path: str):
         ffmpeg_exe, "-y", "-i", video_path,
         "-q:a", "0", "-map", "a", output_path
     ]
-    result = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    result = subprocess.run(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     if result.returncode != 0:
         print("Warning: audio extraction failed (video may be mute). Continuing without audio.")
     else:
@@ -81,13 +90,8 @@ def analyze_with_ai(
     if not fmt:
         fmt = next((f for f in DEFAULT_FORMATS if f["id"] == "video_training_default"), None)
 
-    context_str = "You are analyzing a worker training video. Use both the audio narration and visual frames."
-    if golden_standard == "plumbing":
-        context_str = "You are analyzing a plumbing worker training video. Focus on copper pipe soldering/sweating steps: deburring/cleaning inner and outer pipe edges, flux application, using a propane torch safely, wearing safety gear (gloves, goggles), and cleaning excess flux."
-    elif golden_standard == "electrical":
-        context_str = "You are analyzing an electrical worker training video. Focus on safety and skill: performing lockout-tagout (LOTO) on breakers, using voltage tester/multimeter to verify the wire is dead, wearing insulated safety gloves, correct wire stripping, and secure wire nut connection."
-    elif golden_standard == "building_plumbing":
-        context_str = "You are analyzing a building plumbing system installation video. Focus on system architecture, pipe routing, plumbing plan compliance, drain-waste-vent (DWV) slope, secure pipe hangers, proper trap installation, and leak pressure test verification."
+    standard_data = DOMAIN_STANDARDS.get(golden_standard or "general", DOMAIN_STANDARDS.get("general", {}))
+    context_str = standard_data.get("context_prompt", "You are analyzing a worker training video. Use both the audio narration and visual frames.")
 
     prompt = build_prompt_for_format(
         fmt,
@@ -162,109 +166,8 @@ def analyze_with_ai(
 
 
 def _fallback_video_result(fmt: dict, golden_standard: Optional[str] = None) -> dict:
-    if golden_standard == "electrical":
-        fallback = {
-            "skill_score": 85,
-            "missing_steps": [
-                "Failed to test the circuit with a multimeter/voltage tester after flipping the breaker",
-                "Did not label the breaker panel switch according to LOTO standards"
-            ],
-            "safety_violations": [
-                "Operator did not wear insulated safety gloves while handling exposed wiring",
-                "No lockout tag/device was placed on the breaker switch during the procedure"
-            ],
-            "mcqs": [
-                {
-                    "question": "What is the very first safety step before performing any electrical work?",
-                    "options": [
-                        "Shut off power at the breaker panel and verify with a voltage tester",
-                        "Wear rubber-soled boots",
-                        "Use electrical tape on all wires",
-                        "Inform the building manager"
-                      ],
-                    "answer": "Shut off power at the breaker panel and verify with a voltage tester"
-                },
-                {
-                    "question": "Which tool must be used to ensure a wire is completely dead before touching it?",
-                    "options": [
-                        "A non-contact voltage detector or multimeter",
-                        "A pair of insulated pliers",
-                        "A copper screwdriver",
-                        "A digital thermometer"
-                    ],
-                    "answer": "A non-contact voltage detector or multimeter"
-                }
-            ]
-        }
-    elif golden_standard == "building_plumbing":
-        fallback = {
-            "skill_score": 82,
-            "missing_steps": [
-                "Failed to verify the slope of the drain-waste-vent (DWV) horizontal pipe runs (minimum 1/4 inch per foot)",
-                "Did not place pipe hangers/supports at the required intervals along the copper water lines"
-            ],
-            "safety_violations": [
-                "Did not perform a pressure leak test on the main lines before sealing the drywall",
-                "Operator was not wearing a hard hat and protective gloves in the active construction zone"
-            ],
-            "mcqs": [
-                {
-                    "question": "What is the minimum required slope for horizontal drainage pipes of 2 inches or less?",
-                    "options": [
-                        "1/4 inch per foot",
-                        "1/8 inch per foot",
-                        "1/2 inch per foot",
-                        "No slope is required for small pipes"
-                    ],
-                    "answer": "1/4 inch per foot"
-                },
-                {
-                    "question": "Why must pressure testing be performed on a building plumbing installation before closing walls?",
-                    "options": [
-                        "To identify leaks that could cause catastrophic structural water damage",
-                        "To clean the internal surface of the pipes",
-                        "To increase the water pressure of the building",
-                        "It is an optional quality check that has no regulatory requirement"
-                    ],
-                    "answer": "To identify leaks that could cause catastrophic structural water damage"
-                }
-            ]
-        }
-    else:
-        # Default/plumbing fallback
-        fallback = {
-            "skill_score": 78,
-            "missing_steps": [
-                "Failed to deburr/clean the inner and outer copper pipe edges before joining",
-                "Did not wipe away excess soldering flux from the pipe after cooling"
-            ],
-            "safety_violations": [
-                "Operator was not wearing heat-resistant gloves while using the propane torch",
-                "Did not wear protective safety goggles/glasses during active soldering"
-            ],
-            "mcqs": [
-                {
-                    "question": "Why is it important to clean and deburr the pipe ends before soldering?",
-                    "options": [
-                        "To ensure a leak-free seal and prevent turbulent flow inside the pipe",
-                        "To allow the solder to dry faster",
-                        "To prevent the copper from melting under high heat",
-                        "It is purely cosmetic and has no functional benefit"
-                    ],
-                    "answer": "To ensure a leak-free seal and prevent turbulent flow inside the pipe"
-                },
-                {
-                    "question": "Which safety equipment must be worn while active soldering with a propane torch?",
-                    "options": [
-                        "Safety glasses and heat-resistant gloves",
-                        "Ear protection and dust mask",
-                        "Steel-toed boots and safety harness",
-                        "Rubber gloves and respirator"
-                    ],
-                    "answer": "Safety glasses and heat-resistant gloves"
-                }
-            ]
-        }
+    standard_data = DOMAIN_STANDARDS.get(golden_standard or "general", DOMAIN_STANDARDS.get("general", {}))
+    fallback = standard_data.get("fallback", {})
     if fmt and fmt.get("fields"):
         keys = [f["key"] for f in fmt["fields"]]
         return {k: v for k, v in fallback.items() if k in keys}

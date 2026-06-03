@@ -116,6 +116,20 @@ def delete_format(format_id: str) -> bool:
     return True
 
 
+PROMPTS_FILE = os.path.join(os.path.dirname(__file__), "..", "agent_prompts.json")
+
+
+def load_agent_prompts() -> Dict[str, Any]:
+    """Load agent prompts from disk."""
+    if os.path.exists(PROMPTS_FILE):
+        try:
+            with open(PROMPTS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Warning: could not load agent prompts from {PROMPTS_FILE}: {e}")
+    return {}
+
+
 def build_prompt_for_format(fmt: Dict[str, Any], context: str = "") -> str:
     """
     Build a Gemini prompt that instructs the model to return JSON
@@ -149,19 +163,14 @@ def build_prompt_for_format(fmt: Dict[str, Any], context: str = "") -> str:
     fields_text = "\n".join(field_descriptions)
     json_template = "{\n" + ",\n".join(json_example_lines) + "\n}"
 
-    prompt = f"""You are an expert AI analyst. {context}
+    prompts_data = load_agent_prompts()
+    default_template = "You are an expert AI analyst. {context}\n\nAnalyze the provided content carefully and return a response as a STRICT JSON object with exactly these fields:\n\n{fields_text}\n\nYour response MUST follow this exact JSON structure:\n{json_template}\n\nRules:\n- Output ONLY the raw JSON object. No markdown, no explanation, no extra text.\n- All list fields must be arrays of strings.\n- All number fields must be integers or floats.\n- If information is not available, use an empty list [] or 0 or \"N/A\" as appropriate."
+    template = prompts_data.get("system_prompt_template", default_template)
 
-Analyze the provided content carefully and return a response as a STRICT JSON object with exactly these fields:
-
-{fields_text}
-
-Your response MUST follow this exact JSON structure:
-{json_template}
-
-Rules:
-- Output ONLY the raw JSON object. No markdown, no explanation, no extra text.
-- All list fields must be arrays of strings.
-- All number fields must be integers or floats.
-- If information is not available, use an empty list [] or 0 or "N/A" as appropriate.
-"""
+    prompt = template.format(
+        context=context,
+        fields_text=fields_text,
+        json_template=json_template
+    )
     return prompt
+

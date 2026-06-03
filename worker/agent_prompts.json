@@ -1,0 +1,48 @@
+{
+  "system_prompt_template": "You are an expert AI analyst. {context}\n\nAnalyze the provided content carefully and return a response as a STRICT JSON object with exactly these fields:\n\n{fields_text}\n\nYour response MUST follow this exact JSON structure:\n{json_template}\n\nRules:\n- Output ONLY the raw JSON object. No markdown, no explanation, no extra text.\n- All list fields must be arrays of strings.\n- All number fields must be integers or floats.\n- If information is not available, use an empty list [] or 0 or \"N/A\" as appropriate.",
+  "resume": {
+    "context_prompt": "You are analyzing a candidate's RESUME or CV document.",
+    "fallback": {
+      "overall_score": 72,
+      "technical_skills": ["Python", "FastAPI", "React", "SQL", "Docker"],
+      "soft_skills": ["Team collaboration", "Problem solving", "Communication"],
+      "experience_years": 4,
+      "education_level": "Bachelor's in Computer Science",
+      "strengths": [
+        "Strong backend development experience",
+        "Hands-on with cloud deployments",
+        "Clear and concise project descriptions"
+      ],
+      "red_flags": [
+        "Employment gap of 8 months (2022-2023) not explained",
+        "No mention of testing or CI/CD experience"
+      ],
+      "hire_recommendation": "Maybe — Strong technical profile but gaps need clarification"
+    }
+  },
+  "report": {
+    "context_prompt": "You are analyzing a business or technical REPORT document.",
+    "fallback": {
+      "summary": "The Q3 2024 operations report highlights a 12% increase in productivity across manufacturing units, with notable challenges in supply chain delays and rising raw material costs.",
+      "key_findings": [
+        "Productivity improved by 12% compared to Q2 2024",
+        "Supply chain delays affected 3 out of 5 major product lines",
+        "Customer satisfaction score rose from 78% to 84%",
+        "Energy consumption reduced by 8% following new protocols"
+      ],
+      "risks": [
+        "Raw material costs up 18% year-over-year",
+        "Two key suppliers at risk of contract expiry",
+        "Staff turnover in QA department at 22% — above threshold"
+      ],
+      "recommendations": [
+        "Diversify supplier base to reduce single-point risk",
+        "Implement automated monitoring for supply chain KPIs",
+        "Launch retention program for QA department",
+        "Review energy contracts to sustain cost savings"
+      ],
+      "sentiment": "Positive with concerns",
+      "confidence_score": 85
+    }
+  }
+}

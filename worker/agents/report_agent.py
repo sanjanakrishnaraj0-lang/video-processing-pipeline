@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 from dotenv import load_dotenv
 import google.generativeai as genai
-from agents.format_manager import get_format_by_id, build_prompt_for_format, DEFAULT_FORMATS
+from agents.format_manager import get_format_by_id, build_prompt_for_format, DEFAULT_FORMATS, load_agent_prompts
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
@@ -82,9 +82,11 @@ def analyze_report(file_path: str, job_id: str, format_id: str = "report_summary
     if not fmt:
         fmt = next((f for f in DEFAULT_FORMATS if f["id"] == "report_summary"), None)
 
+    prompts_data = load_agent_prompts().get("report", {})
+    context_str = prompts_data.get("context_prompt", "You are analyzing a business or technical REPORT document.")
     prompt = build_prompt_for_format(
         fmt,
-        context="You are analyzing a business or technical REPORT document."
+        context=context_str
     )
 
     try:
@@ -152,10 +154,9 @@ def _analyze_with_gemini(file_path: str, ext: str, prompt: str) -> dict:
 
 def _fallback_report_result(fmt: dict) -> dict:
     """Return a realistic simulated result if Gemini is unavailable."""
-    fallback = {
-        "summary": "The Q3 2024 operations report highlights a 12% increase in productivity "
-                   "across manufacturing units, with notable challenges in supply chain delays "
-                   "and rising raw material costs.",
+    prompts_data = load_agent_prompts().get("report", {})
+    fallback = prompts_data.get("fallback", {
+        "summary": "The Q3 2024 operations report highlights a 12% increase in productivity across manufacturing units, with notable challenges in supply chain delays and rising raw material costs.",
         "key_findings": [
             "Productivity improved by 12% compared to Q2 2024",
             "Supply chain delays affected 3 out of 5 major product lines",
@@ -175,7 +176,7 @@ def _fallback_report_result(fmt: dict) -> dict:
         ],
         "sentiment": "Positive with concerns",
         "confidence_score": 85
-    }
+    })
     if fmt and fmt.get("fields"):
         keys = [f["key"] for f in fmt["fields"]]
         return {k: v for k, v in fallback.items() if k in keys}

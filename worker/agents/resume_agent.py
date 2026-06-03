@@ -13,7 +13,7 @@ import tempfile
 from pathlib import Path
 from dotenv import load_dotenv
 import google.generativeai as genai
-from agents.format_manager import get_format_by_id, build_prompt_for_format, DEFAULT_FORMATS
+from agents.format_manager import get_format_by_id, build_prompt_for_format, DEFAULT_FORMATS, load_agent_prompts
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
@@ -64,9 +64,11 @@ def analyze_resume(file_path: str, job_id: str, format_id: str = "resume_standar
         # Fall back to built-in resume standard
         fmt = next((f for f in DEFAULT_FORMATS if f["id"] == "resume_standard"), None)
 
+    prompts_data = load_agent_prompts().get("resume", {})
+    context_str = prompts_data.get("context_prompt", "You are analyzing a candidate's RESUME or CV document.")
     prompt = build_prompt_for_format(
         fmt,
-        context="You are analyzing a candidate's RESUME or CV document."
+        context=context_str
     )
 
     try:
@@ -130,7 +132,8 @@ def _analyze_with_gemini(file_path: str, ext: str, prompt: str) -> dict:
 
 def _fallback_resume_result(fmt: dict) -> dict:
     """Return a realistic simulated result if Gemini is unavailable."""
-    fallback = {
+    prompts_data = load_agent_prompts().get("resume", {})
+    fallback = prompts_data.get("fallback", {
         "overall_score": 72,
         "technical_skills": ["Python", "FastAPI", "React", "SQL", "Docker"],
         "soft_skills": ["Team collaboration", "Problem solving", "Communication"],
@@ -146,7 +149,7 @@ def _fallback_resume_result(fmt: dict) -> dict:
             "No mention of testing or CI/CD experience"
         ],
         "hire_recommendation": "Maybe — Strong technical profile but gaps need clarification"
-    }
+    })
     # Filter to only keys in the chosen format
     if fmt and fmt.get("fields"):
         keys = [f["key"] for f in fmt["fields"]]
