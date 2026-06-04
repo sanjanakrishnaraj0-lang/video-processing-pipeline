@@ -281,6 +281,24 @@
           }
         }
       ]
+    },
+    {
+      "workflow_id": "generic",
+      "description": "Auto-detects the uploaded file type and dynamically runs the corresponding agent workflow.",
+      "trigger": {
+        "type": "queue_event"
+      },
+      "steps": [
+        {
+          "step_id": "classify_file",
+          "action": "ai.classify_file",
+          "parameters": {
+            "model": "gemini-1.5-flash-latest",
+            "system_prompt": "You are an expert document classifier. Analyze the provided document text and classify it as either 'resume', 'report', or 'other'.",
+            "prompt_template": "Classify the following text snippet:\n\n{text_snippet}\n\nRespond with a raw JSON object containing a single field 'classification' which must be one of: 'resume', 'report', or 'other'. Example: {\"classification\": \"resume\"}"
+          }
+        }
+      ]
     }
   ]
 }

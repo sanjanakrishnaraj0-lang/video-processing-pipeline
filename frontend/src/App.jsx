@@ -54,11 +54,13 @@ function App() {
     setIsDragging(false)
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const droppedFile = e.dataTransfer.files[0]
-      if (droppedFile.type.startsWith('video/')) {
+      const allowedExtensions = ['.mp4', '.avi', '.mov', '.mkv', '.webm', '.pdf', '.docx', '.doc', '.txt', '.xlsx', '.xls', '.csv']
+      const fileExt = droppedFile.name.substring(droppedFile.name.lastIndexOf('.')).toLowerCase()
+      if (droppedFile.type.startsWith('video/') || allowedExtensions.includes(fileExt)) {
         setFile(droppedFile)
         setStatus({ type: '', message: '' })
       } else {
-        setStatus({ type: 'error', message: 'Please upload a video file.' })
+        setStatus({ type: 'error', message: 'Unsupported file format. Please upload a video or document (PDF, DOCX, Excel, CSV, Text).' })
       }
     }
   }
@@ -87,7 +89,8 @@ function App() {
           formData.append('golden_standard', goldenStandard)
         }
 
-        const { data } = await axios.post('http://localhost:8001/upload', formData, {
+        const { data } = await axios.post('http://localhost:8001/upload/generic', formData, {
+
           headers: { 'Content-Type': 'multipart/form-data' },
           onUploadProgress: (progressEvent) => {
             const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
@@ -193,7 +196,7 @@ function App() {
                 style={{ display: 'none' }}
                 ref={fileInputRef}
                 onChange={handleFileSelect}
-                accept="video/*"
+                accept="video/*,application/pdf,.docx,.doc,.txt,.xlsx,.xls,.csv"
               />
             </div>
           )}
@@ -285,67 +288,220 @@ function App() {
           )}
         </div>
       ) : (
-        <div className="dashboard-container animate-fade-in">
-          <div className="dashboard-header">
-            <h2>Analysis Results</h2>
-            <button className="btn-secondary" onClick={resetUpload}>Analyze Another Video</button>
-          </div>
+        (() => {
+          const detectedType = resultData.detected_agent_type || 
+            (resultData.skill_score !== undefined ? 'video' : 
+             resultData.overall_score !== undefined ? 'resume' : 
+             resultData.summary !== undefined ? 'report' : 'video');
 
-          <div className="dashboard-grid">
-            <div className="glass card score-card">
-              <div className="card-header">
-                <GraduationCap size={24} color="var(--accent)" />
-                <h3>Skill Score</h3>
+          return (
+            <div className="dashboard-container animate-fade-in">
+              <div className="dashboard-header">
+                <h2>Analysis Results — {detectedType.toUpperCase()}</h2>
+                <button className="btn-secondary" onClick={resetUpload}>Analyze Another File</button>
               </div>
-              <div className="score-value">{resultData.skill_score || resultData.skill_gap_analysis?.overall_score || 0}/100</div>
-            </div>
 
-            <div className="glass card">
-              <div className="card-header">
-                <ShieldAlert size={24} color="var(--error)" />
-                <h3>Safety Violations</h3>
-              </div>
-              <ul className="violation-list">
-                {(resultData.safety_violations || resultData.safety_analysis?.violations_detected || []).map((v, i) => (
-                  <li key={i}>{v}</li>
-                ))}
-              </ul>
-            </div>
+              {detectedType === 'video' && (
+                <div className="dashboard-grid">
+                  <div className="glass card score-card">
+                    <div className="card-header">
+                      <GraduationCap size={24} color="var(--accent)" />
+                      <h3>Skill Score</h3>
+                    </div>
+                    <div className="score-value">{resultData.skill_score || 0}/100</div>
+                  </div>
 
-            <div className="glass card full-width">
-              <div className="card-header">
-                <AlertCircle size={24} color="var(--warning, #f59e0b)" />
-                <h3>Missing Steps / Feedback</h3>
-              </div>
-              <ul className="feedback-list">
-                {(resultData.missing_steps || resultData.skill_gap_analysis?.feedback || []).map((f, i) => (
-                  <li key={i}>{f}</li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="glass card full-width">
-              <div className="card-header">
-                <BookOpen size={24} color="var(--success)" />
-                <h3>Generated MCQs</h3>
-              </div>
-              <div className="mcq-list">
-                {(resultData.mcqs || resultData.mcq_questions || []).map((mcq, idx) => (
-                  <div key={idx} className="mcq-item">
-                    <h4>Q{idx + 1}: {mcq.question}</h4>
-                    <ul>
-                      {mcq.options.map((opt, oIdx) => (
-                        <li key={oIdx} className={opt === mcq.answer ? 'correct-answer' : ''}>
-                          {opt} {opt === mcq.answer && '✓'}
-                        </li>
+                  <div className="glass card">
+                    <div className="card-header">
+                      <ShieldAlert size={24} color="var(--error)" />
+                      <h3>Safety Violations</h3>
+                    </div>
+                    <ul className="violation-list">
+                      {(resultData.safety_violations || []).map((v, i) => (
+                        <li key={i}>{v}</li>
                       ))}
                     </ul>
                   </div>
-                ))}
-              </div>
+
+                  <div className="glass card full-width">
+                    <div className="card-header">
+                      <AlertCircle size={24} color="var(--warning, #f59e0b)" />
+                      <h3>Missing Steps / Feedback</h3>
+                    </div>
+                    <ul className="feedback-list">
+                      {(resultData.missing_steps || []).map((f, i) => (
+                        <li key={i}>{f}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="glass card full-width">
+                    <div className="card-header">
+                      <BookOpen size={24} color="var(--success)" />
+                      <h3>Generated MCQs</h3>
+                    </div>
+                    <div className="mcq-list">
+                      {(resultData.mcqs || []).map((mcq, idx) => (
+                        <div key={idx} className="mcq-item">
+                          <h4>Q{idx + 1}: {mcq.question}</h4>
+                          <ul>
+                            {mcq.options.map((opt, oIdx) => (
+                              <li key={oIdx} className={opt === mcq.answer ? 'correct-answer' : ''}>
+                                {opt} {opt === mcq.answer && '✓'}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {detectedType === 'resume' && (
+                <div className="dashboard-grid">
+                  <div className="glass card score-card">
+                    <div className="card-header">
+                      <GraduationCap size={24} color="var(--accent)" />
+                      <h3>Candidate Score</h3>
+                    </div>
+                    <div className="score-value">{resultData.overall_score || 0}/100</div>
+                  </div>
+
+                  <div className="glass card">
+                    <div className="card-header">
+                      <CheckCircle size={24} color="var(--success)" />
+                      <h3>Recommendation</h3>
+                    </div>
+                    <div className="recommendation-value" style={{ fontSize: '1.2rem', fontWeight: 'bold', marginTop: '15px', color: 'var(--success)' }}>
+                      {resultData.hire_recommendation}
+                    </div>
+                    <div style={{ marginTop: '15px' }}>
+                      <strong>Experience:</strong> {resultData.experience_years} years <br />
+                      <strong>Education:</strong> {resultData.education_level}
+                    </div>
+                  </div>
+
+                  <div className="glass card">
+                    <div className="card-header">
+                      <GraduationCap size={24} color="var(--accent)" />
+                      <h3>Technical Skills</h3>
+                    </div>
+                    <div className="skills-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '15px' }}>
+                      {(resultData.technical_skills || []).map((s, i) => (
+                        <span key={i} className="badge" style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.08)', borderRadius: '15px', fontSize: '0.9rem' }}>{s}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="glass card">
+                    <div className="card-header">
+                      <BookOpen size={24} color="var(--success)" />
+                      <h3>Soft Skills</h3>
+                    </div>
+                    <div className="skills-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '15px' }}>
+                      {(resultData.soft_skills || []).map((s, i) => (
+                        <span key={i} className="badge" style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.08)', borderRadius: '15px', fontSize: '0.9rem' }}>{s}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="glass card">
+                    <div className="card-header">
+                      <CheckCircle size={24} color="var(--success)" />
+                      <h3>Key Strengths</h3>
+                    </div>
+                    <ul className="feedback-list" style={{ marginTop: '10px' }}>
+                      {(resultData.strengths || []).map((s, i) => (
+                        <li key={i}>{s}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="glass card">
+                    <div className="card-header">
+                      <ShieldAlert size={24} color="var(--error)" />
+                      <h3>Red Flags / Concerns</h3>
+                    </div>
+                    <ul className="violation-list" style={{ marginTop: '10px' }}>
+                      {(resultData.red_flags || []).map((rf, i) => (
+                        <li key={i}>{rf}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {detectedType === 'report' && (
+                <div className="dashboard-grid">
+                  <div className="glass card score-card">
+                    <div className="card-header">
+                      <GraduationCap size={24} color="var(--accent)" />
+                      <h3>Confidence Score</h3>
+                    </div>
+                    <div className="score-value">{resultData.confidence_score || 0}%</div>
+                  </div>
+
+                  <div className="glass card">
+                    <div className="card-header">
+                      <CheckCircle size={24} color="var(--success)" />
+                      <h3>Sentiment Analysis</h3>
+                    </div>
+                    <div className="recommendation-value" style={{ fontSize: '1.5rem', fontWeight: 'bold', marginTop: '20px', color: 'var(--accent)', textTransform: 'capitalize' }}>
+                      {resultData.sentiment}
+                    </div>
+                  </div>
+
+                  <div className="glass card full-width">
+                    <div className="card-header">
+                      <BookOpen size={24} color="var(--accent)" />
+                      <h3>Executive Summary</h3>
+                    </div>
+                    <p style={{ marginTop: '15px', lineHeight: '1.6', fontSize: '1.05rem', color: '#ccc' }}>
+                      {resultData.summary}
+                    </p>
+                  </div>
+
+                  <div className="glass card">
+                    <div className="card-header">
+                      <GraduationCap size={24} color="var(--accent)" />
+                      <h3>Key Findings</h3>
+                    </div>
+                    <ul className="feedback-list" style={{ marginTop: '10px' }}>
+                      {(resultData.key_findings || []).map((kf, i) => (
+                        <li key={i}>{kf}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="glass card">
+                    <div className="card-header">
+                      <ShieldAlert size={24} color="var(--error)" />
+                      <h3>Identified Risks</h3>
+                    </div>
+                    <ul className="violation-list" style={{ marginTop: '10px' }}>
+                      {(resultData.risks || []).map((r, i) => (
+                        <li key={i}>{r}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="glass card full-width">
+                    <div className="card-header">
+                      <CheckCircle size={24} color="var(--success)" />
+                      <h3>Recommended Actions</h3>
+                    </div>
+                    <ul className="feedback-list" style={{ marginTop: '10px' }}>
+                      {(resultData.recommendations || []).map((rec, i) => (
+                        <li key={i}>{rec}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        </div>
+          );
+        })()
       )}
     </div>
   )

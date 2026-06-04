@@ -221,6 +221,39 @@ async def upload_report(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/upload/generic")
+async def upload_generic(
+    file: UploadFile = File(...),
+    user_id: str = "user_demo"
+):
+    allowed_ext = {
+        ".mp4", ".avi", ".mov", ".mkv", ".webm",
+        ".pdf", ".docx", ".doc", ".txt",
+        ".xlsx", ".xls", ".csv"
+    }
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in allowed_ext:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type '{ext}'. Allowed: {allowed_ext}"
+        )
+    try:
+        file_path, job_id = _save_upload(file)
+        _append_to_queue({
+            "job_id":            job_id,
+            "video_id":          job_id,
+            "video_path":        file_path,
+            "file_path":         file_path,
+            "user_id":           user_id,
+            "original_filename": file.filename,
+            "agent_type":        "generic",
+            "format_id":         None
+        })
+        return {"status": "success", "job_id": job_id, "message": "File uploaded and queued for auto-detect analysis."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Unified Result Endpoint
 # ─────────────────────────────────────────────────────────────────────────────

@@ -63,6 +63,28 @@ class TestWorkflowRunner(unittest.TestCase):
         self.assertEqual(result["confidence_score"], 85)
         self.assertTrue(os.path.exists("result_test_report.json"))
 
+    def test_generic_workflow_routing(self):
+        print("\n=== Running Generic Workflow Classification Test ===")
+        # Test 1: Classify resume file
+        resume_job_data = {
+            "job_id": "test_generic_resume",
+            "file_path": self.mock_resume_path,
+            "agent_type": "generic"
+        }
+        res = self.runner.run_workflow("generic", resume_job_data)
+        print(f"Generic Resume Classification result: {res}")
+        self.assertEqual(res.get("classification"), "resume")
+        
+        # Test 2: Classify report file
+        report_job_data = {
+            "job_id": "test_generic_report",
+            "file_path": self.mock_report_path,
+            "agent_type": "generic"
+        }
+        res = self.runner.run_workflow("generic", report_job_data)
+        print(f"Generic Report Classification result: {res}")
+        self.assertEqual(res.get("classification"), "report")
+
     def test_video_workflow_local(self):
         print("\n=== Running Video Workflow Test ===")
         # Look for local video_t1.mp4 or standard plumbing.mp4

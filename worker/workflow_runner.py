@@ -67,7 +67,78 @@ class WorkflowRunner:
         format_id = job_data.get("format_id")
         golden_standard = job_data.get("golden_standard")
 
-        if action == "storage.download_file":
+        if action == "ai.classify_file":
+            file_path = job_data.get("file_path") or job_data.get("video_path")
+            if not file_path:
+                raise ValueError("No file_path provided for file classification.")
+            
+            ext = os.path.splitext(file_path)[1].lower()
+            if ext in (".mp4", ".avi", ".mov", ".mkv", ".webm"):
+                return {"classification": "video"}
+            
+            # Extract text snippet for document classification
+            text = ""
+            try:
+                if ext in (".docx", ".doc"):
+                    from agents.resume_agent import _extract_text_from_docx
+                    text = _extract_text_from_docx(file_path)
+                elif ext == ".pdf":
+                    from agents.resume_agent import _extract_text_from_pdf
+                    text = _extract_text_from_pdf(file_path)
+                elif ext in (".xlsx", ".xls"):
+                    from agents.report_agent import _extract_text_from_excel
+                    text = _extract_text_from_excel(file_path)
+                elif ext == ".csv":
+                    from agents.report_agent import _extract_text_from_csv
+                    text = _extract_text_from_csv(file_path)
+                elif ext == ".txt":
+                    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                        text = f.read()
+            except Exception as e:
+                print(f"[WorkflowRunner] Classification text extraction failed: {e}")
+            
+            text_snippet = (text or "").strip()[:1000]
+            classification = "other"
+            
+            if text_snippet:
+                system_prompt = params.get("system_prompt", "You are an expert document classifier.")
+                prompt_template = params.get("prompt_template", "Classify the following text: {text_snippet}")
+                prompt = prompt_template.replace("{text_snippet}", text_snippet)
+                
+                try:
+                    import google.generativeai as genai
+                    model_name = params.get("model", "gemini-1.5-flash-latest")
+                    model = genai.GenerativeModel(
+                        model_name,
+                        system_instruction=system_prompt
+                    )
+                    response = model.generate_content([prompt])
+                    result_text = response.text.strip()
+                    
+                    if result_text.startswith("```json"):
+                        result_text = result_text[7:]
+                    if result_text.startswith("```"):
+                        result_text = result_text[3:]
+                    if result_text.endswith("```"):
+                        result_text = result_text[:-3]
+                    
+                    data = json.loads(result_text.strip())
+                    classification = data.get("classification", "other").lower().strip()
+                except Exception as e:
+                    print(f"[WorkflowRunner] Gemini classification failed ({e}). Using keyword checks.")
+                    lower_text = text_snippet.lower()
+                    if any(k in lower_text for k in ["skills", "experience", "resume", "cv", "education", "employment"]):
+                        classification = "resume"
+                    elif any(k in lower_text for k in ["summary", "report", "financial", "revenue", "q3", "q4", "risks", "findings"]):
+                        classification = "report"
+            
+            if classification not in ("resume", "report", "video"):
+                classification = "other"
+            
+            print(f"[WorkflowRunner] File classified as: {classification}")
+            return {"classification": classification}
+
+        elif action == "storage.download_file":
             video_url = job_data.get("video_url")
             video_path = job_data.get("video_path") or job_data.get("file_path")
 
