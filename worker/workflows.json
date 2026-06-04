@@ -1,0 +1,92 @@
+{
+  "agent_profile": {
+    "agent_id": "kovon_multi_modal_agent",
+    "version": "1.0.0",
+    "global_settings": {
+      "max_retries": 3,
+      "timeout_seconds": 3600,
+      "log_level": "INFO",
+      "on_fatal_error": "alert_admin"
+    }
+  },
+  "workflows": [
+    {
+      "workflow_id": "video",
+      "description": "Ingests a video file, extracts audio and frames, and analyzes them with Gemini.",
+      "trigger": {
+        "type": "queue_event"
+      },
+      "steps": [
+        {
+          "step_id": "download_media",
+          "action": "storage.download_file",
+          "parameters": {}
+        },
+        {
+          "step_id": "extract_audio",
+          "action": "video.extract_audio",
+          "depends_on": ["download_media"],
+          "parameters": {}
+        },
+        {
+          "step_id": "extract_frames",
+          "action": "video.extract_frames",
+          "depends_on": ["download_media"],
+          "parameters": {
+            "fps": "1/3"
+          }
+        },
+        {
+          "step_id": "analyze_video",
+          "action": "ai.analyze_video",
+          "depends_on": ["download_media", "extract_audio", "extract_frames"],
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "workflow_id": "resume",
+      "description": "Extracts text from scanned PDFs/DOCX and uses Gemini to analyze details.",
+      "trigger": {
+        "type": "queue_event"
+      },
+      "steps": [
+        {
+          "step_id": "ocr_extraction",
+          "action": "document.extract_text",
+          "parameters": {}
+        },
+        {
+          "step_id": "entity_extraction",
+          "action": "ai.analyze_document",
+          "depends_on": ["ocr_extraction"],
+          "parameters": {
+            "agent_type": "resume"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "report",
+      "description": "Extracts text/tables from business documents and uses Gemini to analyze details.",
+      "trigger": {
+        "type": "queue_event"
+      },
+      "steps": [
+        {
+          "step_id": "ocr_extraction",
+          "action": "document.extract_text",
+          "parameters": {}
+        },
+        {
+          "step_id": "entity_extraction",
+          "action": "ai.analyze_document",
+          "depends_on": ["ocr_extraction"],
+          "parameters": {
+            "agent_type": "report"
+          }
+        }
+      ]
+    }
+  ]
+}

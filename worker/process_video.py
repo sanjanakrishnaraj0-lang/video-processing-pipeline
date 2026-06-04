@@ -41,32 +41,44 @@ def download_video(url: str, output_path: str):
 
 
 def extract_frames(video_path: str, output_dir: str):
-    print("Extracting frames at 1 fps...")
+    print("Extracting frames at 1/3 fps...")
+    video_path = os.path.abspath(video_path)
+    output_dir = os.path.abspath(output_dir)
     for f in os.listdir(output_dir):
         os.remove(os.path.join(output_dir, f))
 
-    ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+    import shutil
+    ffmpeg_exe = shutil.which("ffmpeg") or imageio_ffmpeg.get_ffmpeg_exe()
     cmd = [
-        ffmpeg_exe, "-y", "-i", video_path,
+        ffmpeg_exe, "-y", "-nostdin", "-i", video_path,
         "-vf", "fps=1/3",
         os.path.join(output_dir, "output_%04d.jpg")
     ]
-    subprocess.run(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+    with open(os.devnull, 'rb') as devnull_in, open(os.devnull, 'wb') as devnull_out:
+        subprocess.run(cmd, stdin=devnull_in, stdout=devnull_out, stderr=devnull_out, check=True)
     print("Frames extracted.")
 
 
 def extract_audio(video_path: str, output_path: str):
     print("Extracting audio...")
-    ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+    video_path = os.path.abspath(video_path)
+    output_path = os.path.abspath(output_path)
+    import shutil
+    ffmpeg_exe = shutil.which("ffmpeg") or imageio_ffmpeg.get_ffmpeg_exe()
     cmd = [
-        ffmpeg_exe, "-y", "-i", video_path,
+        ffmpeg_exe, "-y", "-nostdin", "-i", video_path,
         "-q:a", "0", "-map", "a", output_path
     ]
-    result = subprocess.run(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    with open(os.devnull, 'rb') as devnull_in, open(os.devnull, 'wb') as devnull_out:
+        result = subprocess.run(cmd, stdin=devnull_in, stdout=devnull_out, stderr=devnull_out)
     if result.returncode != 0:
         print("Warning: audio extraction failed (video may be mute). Continuing without audio.")
     else:
         print("Audio extracted.")
+
+
+
+
 
 
 def upload_to_gemini(path: str, mime_type: str = None):
