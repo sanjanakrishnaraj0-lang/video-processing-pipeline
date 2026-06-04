@@ -76,6 +76,42 @@ class WorkflowRunner:
             if ext in (".mp4", ".avi", ".mov", ".mkv", ".webm"):
                 return {"classification": "video"}
             
+            if ext in (".jpg", ".jpeg", ".png"):
+                try:
+                    import google.generativeai as genai
+                    mime_type = "image/jpeg" if ext in (".jpg", ".jpeg") else "image/png"
+                    uploaded = genai.upload_file(file_path, mime_type=mime_type)
+                    
+                    system_prompt = params.get("system_prompt", "You are an expert document classifier.")
+                    prompt_template = params.get("prompt_template", "Classify the following text snippet:\n\n{text_snippet}\n\nRespond with a raw JSON object containing a single field 'classification' which must be one of: 'resume', 'report', or 'other'. Example: {\"classification\": \"resume\"}")
+                    prompt = prompt_template.replace("{text_snippet}", "Analyze this uploaded document image.")
+                    
+                    model_name = params.get("model", "gemini-1.5-flash-latest")
+                    model = genai.GenerativeModel(
+                        model_name,
+                        system_instruction=system_prompt
+                    )
+                    response = model.generate_content([prompt, uploaded])
+                    result_text = response.text.strip()
+                    
+                    if result_text.startswith("```json"):
+                        result_text = result_text[7:]
+                    if result_text.startswith("```"):
+                        result_text = result_text[3:]
+                    if result_text.endswith("```"):
+                        result_text = result_text[:-3]
+                    
+                    data = json.loads(result_text.strip())
+                    classification = data.get("classification", "other").lower().strip()
+                except Exception as e:
+                    print(f"[WorkflowRunner] Gemini image classification failed ({e}). Defaulting to resume.")
+                    classification = "resume"
+                
+                if classification not in ("resume", "report", "video"):
+                    classification = "other"
+                print(f"[WorkflowRunner] Image classified as: {classification}")
+                return {"classification": classification}
+
             # Extract text snippet for document classification
             text = ""
             try:
@@ -191,6 +227,7 @@ class WorkflowRunner:
             
             # Resolve custom prompts and fallbacks from workflows.json parameters
             system_prompt_template = params.get("system_prompt_template")
+            model_name = params.get("model", "gemini-2.0-flash")
             golden_standards = params.get("golden_standards", {})
             standard_info = golden_standards.get(golden_standard or "general", golden_standards.get("general", {}))
             
@@ -205,7 +242,8 @@ class WorkflowRunner:
                 golden_standard=golden_standard,
                 system_prompt_template=system_prompt_template,
                 context_prompt=context_prompt,
-                fallback=fallback
+                fallback=fallback,
+                model_name=model_name
             )
 
         elif action == "document.extract_text":
@@ -230,6 +268,8 @@ class WorkflowRunner:
             elif ext == ".txt":
                 with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                     text = f.read()
+            elif ext in (".jpg", ".jpeg", ".png"):
+                text = "[Image file — content will be analyzed directly from the image by Gemini]"
             else:
                 raise ValueError(f"Unsupported document extension: {ext}")
             
@@ -247,6 +287,7 @@ class WorkflowRunner:
             system_prompt_template = params.get("system_prompt_template")
             context_prompt = params.get("context_prompt")
             fallback = params.get("fallback")
+            model_name = params.get("model", "gemini-2.0-flash")
 
             if agent_type == "resume":
                 return analyze_resume(
@@ -255,7 +296,8 @@ class WorkflowRunner:
                     format_id=format_id or "resume_standard",
                     system_prompt_template=system_prompt_template,
                     context_prompt=context_prompt,
-                    fallback=fallback
+                    fallback=fallback,
+                    model_name=model_name
                 )
             elif agent_type == "report":
                 return analyze_report(
@@ -264,7 +306,8 @@ class WorkflowRunner:
                     format_id=format_id or "report_summary",
                     system_prompt_template=system_prompt_template,
                     context_prompt=context_prompt,
-                    fallback=fallback
+                    fallback=fallback,
+                    model_name=model_name
                 )
             else:
                 raise ValueError(f"Unknown document agent type: {agent_type}")

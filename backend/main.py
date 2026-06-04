@@ -229,7 +229,8 @@ async def upload_generic(
     allowed_ext = {
         ".mp4", ".avi", ".mov", ".mkv", ".webm",
         ".pdf", ".docx", ".doc", ".txt",
-        ".xlsx", ".xls", ".csv"
+        ".xlsx", ".xls", ".csv",
+        ".jpg", ".jpeg", ".png"
     }
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in allowed_ext:

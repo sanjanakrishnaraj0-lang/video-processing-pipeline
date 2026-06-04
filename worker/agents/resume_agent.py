@@ -18,7 +18,7 @@ from agents.format_manager import get_format_by_id, build_prompt_for_format, DEF
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt"}
+SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt", ".jpg", ".jpeg", ".png"}
 
 
 def _extract_text_from_docx(file_path: str) -> str:
@@ -50,7 +50,8 @@ def analyze_resume(
     format_id: str = "resume_standard",
     system_prompt_template: Optional[str] = None,
     context_prompt: Optional[str] = None,
-    fallback: Optional[Dict[str, Any]] = None
+    fallback: Optional[Dict[str, Any]] = None,
+    model_name: str = "gemini-2.0-flash"
 ) -> dict:
     """
     Main entry point: analyze a resume file and return structured JSON.
@@ -84,7 +85,7 @@ def analyze_resume(
     )
 
     try:
-        data = _analyze_with_gemini(file_path, ext, prompt)
+        data = _analyze_with_gemini(file_path, ext, prompt, model_name)
     except Exception as e:
         print(f"[ResumeAgent] Gemini failed ({e}). Using simulated fallback.")
         data = _fallback_resume_result(fmt, fallback)
@@ -100,14 +101,15 @@ def analyze_resume(
     return data
 
 
-def _analyze_with_gemini(file_path: str, ext: str, prompt: str) -> dict:
+def _analyze_with_gemini(file_path: str, ext: str, prompt: str, model_name: str = "gemini-2.0-flash") -> dict:
     """Upload file to Gemini and get analysis."""
-    model = genai.GenerativeModel("gemini-1.5-flash-latest")
+    model = genai.GenerativeModel(model_name)
 
-    if ext in (".pdf",):
-        # Upload PDF directly to Gemini File API
-        print(f"[ResumeAgent] Uploading PDF to Gemini...")
-        uploaded = genai.upload_file(file_path, mime_type="application/pdf")
+    if ext in (".pdf", ".jpg", ".jpeg", ".png"):
+        # Upload PDF or Image directly to Gemini File API
+        print(f"[ResumeAgent] Uploading document to Gemini...")
+        mime_type = "application/pdf" if ext == ".pdf" else ("image/jpeg" if ext in (".jpg", ".jpeg") else "image/png")
+        uploaded = genai.upload_file(file_path, mime_type=mime_type)
         # Wait for processing
         while uploaded.state.name == "PROCESSING":
             time.sleep(2)

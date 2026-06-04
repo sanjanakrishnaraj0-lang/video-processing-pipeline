@@ -16,7 +16,7 @@ from agents.format_manager import get_format_by_id, build_prompt_for_format, DEF
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt", ".xlsx", ".xls", ".csv"}
+SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt", ".xlsx", ".xls", ".csv", ".jpg", ".jpeg", ".png"}
 
 
 def _extract_text_from_docx(file_path: str) -> str:
@@ -49,7 +49,7 @@ def _extract_text_from_excel(file_path: str) -> str:
             for row in ws.iter_rows(values_only=True):
                 row_text = "\t".join([str(cell) if cell is not None else "" for cell in row])
                 if row_text.strip():
-                    output.append(row_text)
+                  output.append(row_text)
         return "\n".join(output)
     except Exception as e:
         return f"[Could not extract Excel: {e}]"
@@ -69,7 +69,8 @@ def analyze_report(
     format_id: str = "report_summary",
     system_prompt_template: Optional[str] = None,
     context_prompt: Optional[str] = None,
-    fallback: Optional[Dict[str, Any]] = None
+    fallback: Optional[Dict[str, Any]] = None,
+    model_name: str = "gemini-2.0-flash"
 ) -> dict:
     """
     Main entry point: analyze a report/document and return structured JSON.
@@ -102,7 +103,7 @@ def analyze_report(
     )
 
     try:
-        data = _analyze_with_gemini(file_path, ext, prompt)
+        data = _analyze_with_gemini(file_path, ext, prompt, model_name)
     except Exception as e:
         print(f"[ReportAgent] Gemini failed ({e}). Using simulated fallback.")
         data = _fallback_report_result(fmt, fallback)
@@ -117,13 +118,14 @@ def analyze_report(
     return data
 
 
-def _analyze_with_gemini(file_path: str, ext: str, prompt: str) -> dict:
+def _analyze_with_gemini(file_path: str, ext: str, prompt: str, model_name: str = "gemini-2.0-flash") -> dict:
     """Route file to the right text extractor then send to Gemini."""
-    model = genai.GenerativeModel("gemini-1.5-flash-latest")
+    model = genai.GenerativeModel(model_name)
 
-    if ext == ".pdf":
-        print("[ReportAgent] Uploading PDF to Gemini...")
-        uploaded = genai.upload_file(file_path, mime_type="application/pdf")
+    if ext in (".pdf", ".jpg", ".jpeg", ".png"):
+        print("[ReportAgent] Uploading document to Gemini...")
+        mime_type = "application/pdf" if ext == ".pdf" else ("image/jpeg" if ext in (".jpg", ".jpeg") else "image/png")
+        uploaded = genai.upload_file(file_path, mime_type=mime_type)
         while uploaded.state.name == "PROCESSING":
             time.sleep(2)
             uploaded = genai.get_file(uploaded.name)

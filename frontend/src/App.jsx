@@ -1,7 +1,19 @@
 import { useState, useRef, useEffect } from 'react'
 import axios from 'axios'
-import { Upload, FileVideo, CheckCircle, AlertCircle, Loader2, PlaySquare, ShieldAlert, BookOpen, GraduationCap } from 'lucide-react'
+import { Upload, FileVideo, FileText, Image, CheckCircle, AlertCircle, Loader2, PlaySquare, ShieldAlert, BookOpen, GraduationCap } from 'lucide-react'
 import './App.css'
+
+const getFileIcon = (fileName) => {
+  if (!fileName) return <FileText size={40} color="var(--accent)" />;
+  const ext = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
+  if (['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(ext)) {
+    return <FileVideo size={40} color="var(--accent)" />;
+  }
+  if (['.jpg', '.jpeg', '.png'].includes(ext)) {
+    return <Image size={40} color="var(--accent)" />;
+  }
+  return <FileText size={40} color="var(--accent)" />;
+};
 
 function App() {
   const [file, setFile] = useState(null)
@@ -54,13 +66,13 @@ function App() {
     setIsDragging(false)
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const droppedFile = e.dataTransfer.files[0]
-      const allowedExtensions = ['.mp4', '.avi', '.mov', '.mkv', '.webm', '.pdf', '.docx', '.doc', '.txt', '.xlsx', '.xls', '.csv']
+      const allowedExtensions = ['.mp4', '.avi', '.mov', '.mkv', '.webm', '.pdf', '.docx', '.doc', '.txt', '.xlsx', '.xls', '.csv', '.jpg', '.jpeg', '.png']
       const fileExt = droppedFile.name.substring(droppedFile.name.lastIndexOf('.')).toLowerCase()
-      if (droppedFile.type.startsWith('video/') || allowedExtensions.includes(fileExt)) {
+      if (droppedFile.type.startsWith('video/') || droppedFile.type.startsWith('image/') || allowedExtensions.includes(fileExt)) {
         setFile(droppedFile)
         setStatus({ type: '', message: '' })
       } else {
-        setStatus({ type: 'error', message: 'Unsupported file format. Please upload a video or document (PDF, DOCX, Excel, CSV, Text).' })
+        setStatus({ type: 'error', message: 'Unsupported file format. Please upload a video, document (PDF, DOCX, Excel, CSV, Text), or image (JPG, PNG).' })
       }
     }
   }
@@ -163,7 +175,7 @@ function App() {
           
           {file ? (
             <div className="selected-file">
-              <FileVideo size={40} color="var(--accent)" />
+              {getFileIcon(file.name)}
               <div className="file-info">
                 <span className="file-name">{file.name}</span>
                 <span className="file-size">{formatFileSize(file.size)}</span>
@@ -187,10 +199,10 @@ function App() {
             >
               <Upload className="upload-icon" size={48} />
               <div className="upload-text">
-                <h3>Drag & Drop your video or document here</h3>
+                <h3>Drag & Drop your file here</h3>
                 <p>or click to browse from your computer</p>
                 <small style={{ opacity: 0.6, display: 'block', marginTop: '8px' }}>
-                  Supports PDF, DOCX, Excel, CSV, Text, and Videos
+                  Supports PDF, DOCX, Excel, CSV, Text, Images, and Videos
                 </small>
               </div>
               <input 
@@ -199,7 +211,7 @@ function App() {
                 style={{ display: 'none' }}
                 ref={fileInputRef}
                 onChange={handleFileSelect}
-                accept="video/*,application/pdf,.docx,.doc,.txt,.xlsx,.xls,.csv"
+                accept="video/*,image/*,application/pdf,.docx,.doc,.txt,.xlsx,.xls,.csv"
               />
             </div>
           )}

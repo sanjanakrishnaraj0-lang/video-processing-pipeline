@@ -96,7 +96,8 @@ def analyze_with_ai(
     golden_standard: Optional[str] = None,
     system_prompt_template: Optional[str] = None,
     context_prompt: Optional[str] = None,
-    fallback: Optional[Dict[str, Any]] = None
+    fallback: Optional[Dict[str, Any]] = None,
+    model_name: str = "gemini-2.0-flash"
 ) -> Optional[Dict[str, Any]]:
     """
     Analyze video frames + audio with Gemini using a custom or default output format.
@@ -150,8 +151,8 @@ def analyze_with_ai(
                 audio_file = genai.get_file(audio_file.name)
             print()
 
-        print("Analyzing with Gemini Flash...")
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        print(f"Analyzing with Gemini ({model_name})...")
+        model = genai.GenerativeModel(model_name)
 
         contents = [prompt]
         if audio_file:
