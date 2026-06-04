@@ -155,7 +155,7 @@ function App() {
     <div className="app-container">
       <header className="header animate-fade-in">
         <h1>Kovon AI</h1>
-        <p>Upload training videos for automated safety and skill analysis</p>
+        <p>Upload a training video, resume, or report for dynamic AI analysis</p>
       </header>
 
       {!resultData ? (
@@ -187,8 +187,11 @@ function App() {
             >
               <Upload className="upload-icon" size={48} />
               <div className="upload-text">
-                <h3>Drag & Drop your video here</h3>
+                <h3>Drag & Drop your video or document here</h3>
                 <p>or click to browse from your computer</p>
+                <small style={{ opacity: 0.6, display: 'block', marginTop: '8px' }}>
+                  Supports PDF, DOCX, Excel, CSV, Text, and Videos
+                </small>
               </div>
               <input 
                 type="file" 
@@ -210,7 +213,7 @@ function App() {
                   onChange={(e) => setGoldenStandard(e.target.value)}
                   disabled={isUploading}
                 >
-                  <option value="">Select a Golden Reference Standard (Optional)</option>
+                  <option value="">Select a Golden Reference Standard (Videos only, optional)</option>
                   <option value="plumbing">Plumbing Golden Standard</option>
                   <option value="electrical">Electrical Golden Standard</option>
                   <option value="building_plumbing">Building Plumbing Golden Standard</option>
@@ -254,7 +257,7 @@ function App() {
                 {isUploading ? (
                   <><Loader2 className="animate-spin" size={20} /> Uploading...</>
                 ) : (
-                  <><PlaySquare size={20} /> Analyze Video</>
+                  <><PlaySquare size={20} /> Analyze Upload</>
                 )}
               </button>
             ) : (
@@ -275,7 +278,7 @@ function App() {
           {isProcessing && (
             <div className="processing-status">
                <Loader2 className="animate-spin icon-large" size={32} color="var(--accent)" />
-               <p>AI is currently processing your video...</p>
+               <p>AI is currently processing your upload...</p>
                <small>This may take up to a minute</small>
             </div>
           )}
