@@ -15,12 +15,13 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 # Load domain standard prompts and fallbacks
 STANDARDS_FILE = os.path.join(os.path.dirname(__file__), "domain_standards.json")
-try:
-    with open(STANDARDS_FILE, "r", encoding="utf-8") as f:
-        DOMAIN_STANDARDS = json.load(f)
-except Exception as e:
-    print(f"Warning: could not load domain standards from {STANDARDS_FILE}: {e}")
-    DOMAIN_STANDARDS = {}
+DOMAIN_STANDARDS = {}
+if os.path.exists(STANDARDS_FILE):
+    try:
+        with open(STANDARDS_FILE, "r", encoding="utf-8") as f:
+            DOMAIN_STANDARDS = json.load(f)
+    except Exception as e:
+        print(f"Warning: could not load domain standards from {STANDARDS_FILE}: {e}")
 
 # Configure Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
@@ -92,7 +93,10 @@ def analyze_with_ai(
     frames_dir: str,
     result_path: str = "result.json",
     format_id: str = "video_training_default",
-    golden_standard: Optional[str] = None
+    golden_standard: Optional[str] = None,
+    system_prompt_template: Optional[str] = None,
+    context_prompt: Optional[str] = None,
+    fallback: Optional[Dict[str, Any]] = None
 ) -> Optional[Dict[str, Any]]:
     """
     Analyze video frames + audio with Gemini using a custom or default output format.
@@ -102,12 +106,16 @@ def analyze_with_ai(
     if not fmt:
         fmt = next((f for f in DEFAULT_FORMATS if f["id"] == "video_training_default"), None)
 
-    standard_data = DOMAIN_STANDARDS.get(golden_standard or "general", DOMAIN_STANDARDS.get("general", {}))
-    context_str = standard_data.get("context_prompt", "You are analyzing a worker training video. Use both the audio narration and visual frames.")
+    if context_prompt is None:
+        standard_data = DOMAIN_STANDARDS.get(golden_standard or "general", DOMAIN_STANDARDS.get("general", {}))
+        context_str = standard_data.get("context_prompt", "You are analyzing a worker training video. Use both the audio narration and visual frames.")
+    else:
+        context_str = context_prompt
 
     prompt = build_prompt_for_format(
         fmt,
-        context=context_str
+        context=context_str,
+        system_prompt_template=system_prompt_template
     )
 
     try:
@@ -164,7 +172,13 @@ def analyze_with_ai(
 
     except Exception as e:
         print(f"Gemini API failed ({e}). Falling back to simulated analysis...")
-        data = _fallback_video_result(fmt, golden_standard)
+        if fallback is not None:
+            data = fallback
+            if fmt and fmt.get("fields"):
+                keys = [f["key"] for f in fmt["fields"]]
+                data = {k: v for k, v in data.items() if k in keys}
+        else:
+            data = _fallback_video_result(fmt, golden_standard)
 
     try:
         with open(result_path, "w") as f:
@@ -175,6 +189,7 @@ def analyze_with_ai(
     except Exception as write_err:
         print(f"Failed to write results: {write_err}")
         return None
+
 
 
 def _fallback_video_result(fmt: dict, golden_standard: Optional[str] = None) -> dict:

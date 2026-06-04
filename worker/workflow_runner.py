@@ -117,12 +117,24 @@ class WorkflowRunner:
                 raise ValueError("Missing video_path, audio_path, or frames_dir outputs from dependency steps.")
 
             result_path = f"result_{job_id}.json"
+            
+            # Resolve custom prompts and fallbacks from workflows.json parameters
+            system_prompt_template = params.get("system_prompt_template")
+            golden_standards = params.get("golden_standards", {})
+            standard_info = golden_standards.get(golden_standard or "general", golden_standards.get("general", {}))
+            
+            context_prompt = standard_info.get("context_prompt")
+            fallback = standard_info.get("fallback")
+
             return analyze_with_ai(
                 audio_path=audio_path,
                 frames_dir=frames_dir,
                 result_path=result_path,
                 format_id=format_id or "video_training_default",
-                golden_standard=golden_standard
+                golden_standard=golden_standard,
+                system_prompt_template=system_prompt_template,
+                context_prompt=context_prompt,
+                fallback=fallback
             )
 
         elif action == "document.extract_text":
@@ -161,12 +173,31 @@ class WorkflowRunner:
                 raise ValueError("Dependency 'ocr_extraction' did not output extracted_text or file_path.")
 
             agent_type = params.get("agent_type", "resume")
+            system_prompt_template = params.get("system_prompt_template")
+            context_prompt = params.get("context_prompt")
+            fallback = params.get("fallback")
+
             if agent_type == "resume":
-                return analyze_resume(file_path, job_id, format_id or "resume_standard")
+                return analyze_resume(
+                    file_path=file_path,
+                    job_id=job_id,
+                    format_id=format_id or "resume_standard",
+                    system_prompt_template=system_prompt_template,
+                    context_prompt=context_prompt,
+                    fallback=fallback
+                )
             elif agent_type == "report":
-                return analyze_report(file_path, job_id, format_id or "report_summary")
+                return analyze_report(
+                    file_path=file_path,
+                    job_id=job_id,
+                    format_id=format_id or "report_summary",
+                    system_prompt_template=system_prompt_template,
+                    context_prompt=context_prompt,
+                    fallback=fallback
+                )
             else:
                 raise ValueError(f"Unknown document agent type: {agent_type}")
 
         else:
             raise NotImplementedError(f"Action '{action}' is not supported.")
+

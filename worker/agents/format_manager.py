@@ -130,7 +130,7 @@ def load_agent_prompts() -> Dict[str, Any]:
     return {}
 
 
-def build_prompt_for_format(fmt: Dict[str, Any], context: str = "") -> str:
+def build_prompt_for_format(fmt: Dict[str, Any], context: str = "", system_prompt_template: str = None) -> str:
     """
     Build a Gemini prompt that instructs the model to return JSON
     matching the given format schema.
@@ -163,9 +163,8 @@ def build_prompt_for_format(fmt: Dict[str, Any], context: str = "") -> str:
     fields_text = "\n".join(field_descriptions)
     json_template = "{\n" + ",\n".join(json_example_lines) + "\n}"
 
-    prompts_data = load_agent_prompts()
     default_template = "You are an expert AI analyst. {context}\n\nAnalyze the provided content carefully and return a response as a STRICT JSON object with exactly these fields:\n\n{fields_text}\n\nYour response MUST follow this exact JSON structure:\n{json_template}\n\nRules:\n- Output ONLY the raw JSON object. No markdown, no explanation, no extra text.\n- All list fields must be arrays of strings.\n- All number fields must be integers or floats.\n- If information is not available, use an empty list [] or 0 or \"N/A\" as appropriate."
-    template = prompts_data.get("system_prompt_template", default_template)
+    template = system_prompt_template or default_template
 
     prompt = template.format(
         context=context,
@@ -173,4 +172,5 @@ def build_prompt_for_format(fmt: Dict[str, Any], context: str = "") -> str:
         json_template=json_template
     )
     return prompt
+
 

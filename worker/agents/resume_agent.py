@@ -44,7 +44,14 @@ def _extract_text_from_pdf(file_path: str) -> str:
         return f"[Could not extract PDF text: {e}]"
 
 
-def analyze_resume(file_path: str, job_id: str, format_id: str = "resume_standard") -> dict:
+def analyze_resume(
+    file_path: str,
+    job_id: str,
+    format_id: str = "resume_standard",
+    system_prompt_template: Optional[str] = None,
+    context_prompt: Optional[str] = None,
+    fallback: Optional[Dict[str, Any]] = None
+) -> dict:
     """
     Main entry point: analyze a resume file and return structured JSON.
     
@@ -64,18 +71,23 @@ def analyze_resume(file_path: str, job_id: str, format_id: str = "resume_standar
         # Fall back to built-in resume standard
         fmt = next((f for f in DEFAULT_FORMATS if f["id"] == "resume_standard"), None)
 
-    prompts_data = load_agent_prompts().get("resume", {})
-    context_str = prompts_data.get("context_prompt", "You are analyzing a candidate's RESUME or CV document.")
+    if context_prompt is None:
+        prompts_data = load_agent_prompts().get("resume", {})
+        context_str = prompts_data.get("context_prompt", "You are analyzing a candidate's RESUME or CV document.")
+    else:
+        context_str = context_prompt
+
     prompt = build_prompt_for_format(
         fmt,
-        context=context_str
+        context=context_str,
+        system_prompt_template=system_prompt_template
     )
 
     try:
         data = _analyze_with_gemini(file_path, ext, prompt)
     except Exception as e:
         print(f"[ResumeAgent] Gemini failed ({e}). Using simulated fallback.")
-        data = _fallback_resume_result(fmt)
+        data = _fallback_resume_result(fmt, fallback)
 
     # Save result
     try:
@@ -130,28 +142,30 @@ def _analyze_with_gemini(file_path: str, ext: str, prompt: str) -> dict:
     return json.loads(result_text.strip())
 
 
-def _fallback_resume_result(fmt: dict) -> dict:
+def _fallback_resume_result(fmt: dict, fallback: Optional[Dict[str, Any]] = None) -> dict:
     """Return a realistic simulated result if Gemini is unavailable."""
-    prompts_data = load_agent_prompts().get("resume", {})
-    fallback = prompts_data.get("fallback", {
-        "overall_score": 72,
-        "technical_skills": ["Python", "FastAPI", "React", "SQL", "Docker"],
-        "soft_skills": ["Team collaboration", "Problem solving", "Communication"],
-        "experience_years": 4,
-        "education_level": "Bachelor's in Computer Science",
-        "strengths": [
-            "Strong backend development experience",
-            "Hands-on with cloud deployments",
-            "Clear and concise project descriptions"
-        ],
-        "red_flags": [
-            "Employment gap of 8 months (2022-2023) not explained",
-            "No mention of testing or CI/CD experience"
-        ],
-        "hire_recommendation": "Maybe — Strong technical profile but gaps need clarification"
-    })
+    if fallback is None:
+        prompts_data = load_agent_prompts().get("resume", {})
+        fallback = prompts_data.get("fallback", {
+            "overall_score": 72,
+            "technical_skills": ["Python", "FastAPI", "React", "SQL", "Docker"],
+            "soft_skills": ["Team collaboration", "Problem solving", "Communication"],
+            "experience_years": 4,
+            "education_level": "Bachelor's in Computer Science",
+            "strengths": [
+                "Strong backend development experience",
+                "Hands-on with cloud deployments",
+                "Clear and concise project descriptions"
+              ],
+            "red_flags": [
+                "Employment gap of 8 months (2022-2023) not explained",
+                "No mention of testing or CI/CD experience"
+              ],
+            "hire_recommendation": "Maybe — Strong technical profile but gaps need clarification"
+        })
     # Filter to only keys in the chosen format
     if fmt and fmt.get("fields"):
         keys = [f["key"] for f in fmt["fields"]]
         return {k: v for k, v in fallback.items() if k in keys}
     return fallback
+

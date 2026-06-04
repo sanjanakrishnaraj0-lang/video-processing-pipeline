@@ -63,7 +63,14 @@ def _extract_text_from_csv(file_path: str) -> str:
         return f"[Could not read CSV: {e}]"
 
 
-def analyze_report(file_path: str, job_id: str, format_id: str = "report_summary") -> dict:
+def analyze_report(
+    file_path: str,
+    job_id: str,
+    format_id: str = "report_summary",
+    system_prompt_template: Optional[str] = None,
+    context_prompt: Optional[str] = None,
+    fallback: Optional[Dict[str, Any]] = None
+) -> dict:
     """
     Main entry point: analyze a report/document and return structured JSON.
 
@@ -82,18 +89,23 @@ def analyze_report(file_path: str, job_id: str, format_id: str = "report_summary
     if not fmt:
         fmt = next((f for f in DEFAULT_FORMATS if f["id"] == "report_summary"), None)
 
-    prompts_data = load_agent_prompts().get("report", {})
-    context_str = prompts_data.get("context_prompt", "You are analyzing a business or technical REPORT document.")
+    if context_prompt is None:
+        prompts_data = load_agent_prompts().get("report", {})
+        context_str = prompts_data.get("context_prompt", "You are analyzing a business or technical REPORT document.")
+    else:
+        context_str = context_prompt
+
     prompt = build_prompt_for_format(
         fmt,
-        context=context_str
+        context=context_str,
+        system_prompt_template=system_prompt_template
     )
 
     try:
         data = _analyze_with_gemini(file_path, ext, prompt)
     except Exception as e:
         print(f"[ReportAgent] Gemini failed ({e}). Using simulated fallback.")
-        data = _fallback_report_result(fmt)
+        data = _fallback_report_result(fmt, fallback)
 
     try:
         with open(result_path, "w", encoding="utf-8") as f:
@@ -152,32 +164,34 @@ def _analyze_with_gemini(file_path: str, ext: str, prompt: str) -> dict:
     return json.loads(result_text.strip())
 
 
-def _fallback_report_result(fmt: dict) -> dict:
+def _fallback_report_result(fmt: dict, fallback: Optional[Dict[str, Any]] = None) -> dict:
     """Return a realistic simulated result if Gemini is unavailable."""
-    prompts_data = load_agent_prompts().get("report", {})
-    fallback = prompts_data.get("fallback", {
-        "summary": "The Q3 2024 operations report highlights a 12% increase in productivity across manufacturing units, with notable challenges in supply chain delays and rising raw material costs.",
-        "key_findings": [
-            "Productivity improved by 12% compared to Q2 2024",
-            "Supply chain delays affected 3 out of 5 major product lines",
-            "Customer satisfaction score rose from 78% to 84%",
-            "Energy consumption reduced by 8% following new protocols"
-        ],
-        "risks": [
-            "Raw material costs up 18% year-over-year",
-            "Two key suppliers at risk of contract expiry",
-            "Staff turnover in QA department at 22% — above threshold"
-        ],
-        "recommendations": [
-            "Diversify supplier base to reduce single-point risk",
-            "Implement automated monitoring for supply chain KPIs",
-            "Launch retention program for QA department",
-            "Review energy contracts to sustain cost savings"
-        ],
-        "sentiment": "Positive with concerns",
-        "confidence_score": 85
-    })
+    if fallback is None:
+        prompts_data = load_agent_prompts().get("report", {})
+        fallback = prompts_data.get("fallback", {
+            "summary": "The Q3 2024 operations report highlights a 12% increase in productivity across manufacturing units, with notable challenges in supply chain delays and rising raw material costs.",
+            "key_findings": [
+                "Productivity improved by 12% compared to Q2 2024",
+                "Supply chain delays affected 3 out of 5 major product lines",
+                "Customer satisfaction score rose from 78% to 84%",
+                "Energy consumption reduced by 8% following new protocols"
+            ],
+            "risks": [
+                "Raw material costs up 18% year-over-year",
+                "Two key suppliers at risk of contract expiry",
+                "Staff turnover in QA department at 22% — above threshold"
+            ],
+            "recommendations": [
+                "Diversify supplier base to reduce single-point risk",
+                "Implement automated monitoring for supply chain KPIs",
+                "Launch retention program for QA department",
+                "Review energy contracts to sustain cost savings"
+            ],
+            "sentiment": "Positive with concerns",
+            "confidence_score": 85
+        })
     if fmt and fmt.get("fields"):
         keys = [f["key"] for f in fmt["fields"]]
         return {k: v for k, v in fallback.items() if k in keys}
     return fallback
+
