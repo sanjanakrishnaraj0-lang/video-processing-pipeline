@@ -213,23 +213,44 @@
             "agent_type": "resume",
             "model": "gemini-2.0-flash",
             "system_prompt_template": "You are an expert AI analyst. {context}\n\nAnalyze the provided content carefully and return a response as a STRICT JSON object with exactly these fields:\n\n{fields_text}\n\nYour response MUST follow this exact JSON structure:\n{json_template}\n\nRules:\n- Output ONLY the raw JSON object. No markdown, no explanation, no extra text.\n- All list fields must be arrays of strings.\n- All number fields must be integers or floats.\n- If information is not available, use an empty list [] or 0 or \"N/A\" as appropriate.",
-            "context_prompt": "You are analyzing a candidate's RESUME or CV document.",
-            "fallback": {
-              "overall_score": 72,
-              "technical_skills": ["Python", "FastAPI", "React", "SQL", "Docker"],
-              "soft_skills": ["Team collaboration", "Problem solving", "Communication"],
-              "experience_years": 4,
-              "education_level": "Bachelor's in Computer Science",
-              "strengths": [
-                "Strong backend development experience",
-                "Hands-on with cloud deployments",
-                "Clear and concise project descriptions"
-              ],
-              "red_flags": [
-                "Employment gap of 8 months (2022-2023) not explained",
-                "No mention of testing or CI/CD experience"
-              ],
-              "hire_recommendation": "Maybe — Strong technical profile but gaps need clarification"
+            "golden_standards": {
+              "general": {
+                "context_prompt": "You are analyzing a candidate's RESUME or CV document.",
+                "fallback": {
+                  "overall_score": 72,
+                  "technical_skills": ["Python", "FastAPI", "React", "SQL", "Docker"],
+                  "soft_skills": ["Team collaboration", "Problem solving", "Communication"],
+                  "experience_years": 4,
+                  "education_level": "Bachelor's in Computer Science",
+                  "strengths": [
+                    "Strong backend development experience",
+                    "Hands-on with cloud deployments",
+                    "Clear and concise project descriptions"
+                  ],
+                  "red_flags": [
+                    "Employment gap of 8 months (2022-2023) not explained",
+                    "No mention of testing or CI/CD experience"
+                  ],
+                  "hire_recommendation": "Maybe — Strong technical profile but gaps need clarification"
+                }
+              },
+              "software_engineer": {
+                "context_prompt": "You are analyzing a candidate's resume specifically for a Software Engineer role. Focus on technical skills (languages, frameworks), coding experience, engineering education, and technical achievements.",
+                "fallback": {
+                  "overall_score": 90,
+                  "technical_skills": ["Python", "Go", "Docker", "Kubernetes", "gRPC", "PostgreSQL"],
+                  "soft_skills": ["System Design", "Agile", "Technical Leadership"],
+                  "experience_years": 6,
+                  "education_level": "Master's in Software Engineering",
+                  "strengths": [
+                    "Strong backend and cloud native experience",
+                    "Led a team of 4 engineers",
+                    "Active open source contributor"
+                  ],
+                  "red_flags": [],
+                  "hire_recommendation": "Strong Buy — Excellent fit for the senior engineering role"
+                }
+              }
             }
           }
         }

@@ -285,9 +285,16 @@ class WorkflowRunner:
 
             agent_type = params.get("agent_type", "resume")
             system_prompt_template = params.get("system_prompt_template")
-            context_prompt = params.get("context_prompt")
-            fallback = params.get("fallback")
             model_name = params.get("model", "gemini-2.0-flash")
+
+            golden_standards = params.get("golden_standards", {})
+            if golden_standards:
+                standard_info = golden_standards.get(golden_standard or "general", golden_standards.get("general", {}))
+                context_prompt = standard_info.get("context_prompt", params.get("context_prompt"))
+                fallback = standard_info.get("fallback", params.get("fallback"))
+            else:
+                context_prompt = params.get("context_prompt")
+                fallback = params.get("fallback")
 
             if agent_type == "resume":
                 return analyze_resume(

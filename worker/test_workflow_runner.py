@@ -44,6 +44,27 @@ class TestWorkflowRunner(unittest.TestCase):
         self.assertIn("technical_skills", result)
         self.assertTrue(os.path.exists("result_test_resume.json"))
 
+    def test_resume_workflow_with_golden_standard(self):
+        print("\n=== Running Resume Workflow with Software Engineer Standard Test ===")
+        job_data = {
+            "job_id": "test_resume_se",
+            "file_path": self.mock_resume_path,
+            "format_id": "resume_standard",
+            "agent_type": "resume",
+            "golden_standard": "software_engineer"
+        }
+        
+        result = self.runner.run_workflow("resume", job_data)
+        print("Resume software engineer workflow result:")
+        print(json.dumps(result, indent=2))
+        
+        # Verify result format and fallback/mock score for software engineer standard
+        self.assertIn("overall_score", result)
+        self.assertEqual(result["overall_score"], 90)
+        self.assertIn("technical_skills", result)
+        self.assertIn("Go", result["technical_skills"])
+        self.assertTrue(os.path.exists("result_test_resume_se.json"))
+
     def test_report_workflow(self):
         print("\n=== Running Report Workflow Test ===")
         job_data = {
@@ -118,7 +139,7 @@ class TestWorkflowRunner(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         # Clean up mock files and result files
-        for f in [cls.mock_resume_path, cls.mock_report_path, "result_test_resume.json", "result_test_report.json", "result_test_video.json"]:
+        for f in [cls.mock_resume_path, cls.mock_report_path, "result_test_resume.json", "result_test_resume_se.json", "result_test_report.json", "result_test_video.json"]:
             if os.path.exists(f):
                 try:
                     os.remove(f)

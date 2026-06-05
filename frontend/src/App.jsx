@@ -15,6 +15,18 @@ const getFileIcon = (fileName) => {
   return <FileText size={40} color="var(--accent)" />;
 };
 
+const isVideoFile = (fileObj, urlStr) => {
+  if (fileObj) {
+    const ext = fileObj.name.substring(fileObj.name.lastIndexOf('.')).toLowerCase();
+    return ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(ext);
+  }
+  if (urlStr) {
+    const ext = urlStr.substring(urlStr.lastIndexOf('.')).toLowerCase();
+    return ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(ext) || urlStr.toLowerCase().includes('video');
+  }
+  return false;
+};
+
 function App() {
   const [file, setFile] = useState(null)
   const [videoUrl, setVideoUrl] = useState('')
@@ -218,20 +230,6 @@ function App() {
 
           {!file && !isProcessing && (
             <>
-              <div className="select-standard-container">
-                <select 
-                  className="select-standard"
-                  value={goldenStandard}
-                  onChange={(e) => setGoldenStandard(e.target.value)}
-                  disabled={isUploading}
-                >
-                  <option value="">Select a Golden Reference Standard (Videos only, optional)</option>
-                  <option value="plumbing">Plumbing Golden Standard</option>
-                  <option value="electrical">Electrical Golden Standard</option>
-                  <option value="building_plumbing">Building Plumbing Golden Standard</option>
-                </select>
-              </div>
-
               <div className="or-divider">— OR —</div>
 
               <div className="url-input-container">
@@ -245,6 +243,32 @@ function App() {
                 />
               </div>
             </>
+          )}
+
+          {(file || videoUrl.trim()) && !isProcessing && (
+            <div className="select-standard-container">
+              <select 
+                className="select-standard"
+                value={goldenStandard}
+                onChange={(e) => setGoldenStandard(e.target.value)}
+                disabled={isUploading}
+              >
+                {isVideoFile(file, videoUrl) ? (
+                  <>
+                    <option value="">Select a Golden Reference Standard (Video, optional)</option>
+                    <option value="plumbing">Plumbing Golden Standard</option>
+                    <option value="electrical">Electrical Golden Standard</option>
+                    <option value="building_plumbing">Building Plumbing Golden Standard</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="">Select a Golden Reference Standard (Resume, optional)</option>
+                    <option value="general">General Resume Standard</option>
+                    <option value="software_engineer">Software Engineer Golden Standard</option>
+                  </>
+                )}
+              </select>
+            </div>
           )}
 
           {isUploading && uploadProgress > 0 && (

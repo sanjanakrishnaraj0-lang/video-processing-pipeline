@@ -224,7 +224,8 @@ async def upload_report(
 @app.post("/upload/generic")
 async def upload_generic(
     file: UploadFile = File(...),
-    user_id: str = "user_demo"
+    user_id: str = "user_demo",
+    golden_standard: Optional[str] = Form(None)
 ):
     allowed_ext = {
         ".mp4", ".avi", ".mov", ".mkv", ".webm",
@@ -248,7 +249,8 @@ async def upload_generic(
             "user_id":           user_id,
             "original_filename": file.filename,
             "agent_type":        "generic",
-            "format_id":         None
+            "format_id":         None,
+            "golden_standard":   golden_standard
         })
         return {"status": "success", "job_id": job_id, "message": "File uploaded and queued for auto-detect analysis."}
     except Exception as e:
