@@ -105,7 +105,7 @@ def _analyze_text_locally(text: str, file_path: str, fallback_data: dict = None,
         if 5 < len(first_line_clean) < 80:
             result["title"] = first_line_clean
             
-    details = dict(result.get("extracted_details", {}))
+    details = {}
     aadhaar_pattern = re.compile(r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}\b')
     dob_pattern = re.compile(r'(?:DOB|Date of Birth|Birth|DOB\s*:)\s*[:\-]?\s*(\d{2}/\d{2}/\d{4}|\d{2}-\d{2}-\d{4}|\d{4}-\d{2}-\d{2})', re.IGNORECASE)
     email_pattern = re.compile(r'\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b')
@@ -115,7 +115,7 @@ def _analyze_text_locally(text: str, file_path: str, fallback_data: dict = None,
     extracted_name = None
     name_match = re.search(r'(?:name|nam)\s*[:\-]\s*([a-zA-Z\s\.]+)', text, re.IGNORECASE)
     if name_match:
-        cand_name = name_match.group(1).strip()
+        cand_name = name_match.group(1).split('\n')[0].strip()
         if len(cand_name) > 2 and not any(k in cand_name.lower() for k in ["government", "india", "uidai", "aadhaar", "male", "female", "help", "enrollment", "birth", "dob", "address"]):
             extracted_name = cand_name
             
@@ -208,25 +208,6 @@ def _analyze_text_locally(text: str, file_path: str, fallback_data: dict = None,
     return result
 
 
-def _parse_aadhaar_fallback_from_filename(filename: str) -> dict:
-    extracted_name = _extract_name_from_filename(filename)
-    if not extracted_name:
-        extracted_name = "Sanjana Sk"
-        
-    return {
-        "document_type": "Identity Document (Aadhaar Card)",
-        "title": f"Aadhaar Card of {extracted_name}",
-        "summary": f"Government of India Aadhaar Card national identity document containing {extracted_name}'s details.",
-        "extracted_details": {
-            "Name": extracted_name,
-            "Aadhaar Number": "9171 7214 0145" if extracted_name == "Sanjana Sk" else "5489-1204-7762",
-            "Date of Birth": "06/01/2006" if extracted_name == "Sanjana Sk" else "12/04/1990",
-            "Gender": "Female" if extracted_name == "Sanjana Sk" else "Male",
-            "Address": "D/O Krishna Raj. Bharathi Street, VTC: Sringeri, PO: Sringeri, District: Chikmagalur, State: Karnataka, PIN Code: 577139" if extracted_name == "Sanjana Sk" else "12, MG Road, Bengaluru, Karnataka - 560001"
-        }
-    }
-
-
 def analyze_generic_document(
     file_path: str,
     job_id: str,
@@ -268,11 +249,7 @@ def analyze_generic_document(
             data = _analyze_text_locally(local_text, file_path, fallback, original_filename)
         else:
             filename = original_filename or os.path.basename(file_path)
-            filename_lower = filename.lower()
-            if any(k in filename_lower for k in ["adhar", "aadhaar"]):
-                data = _parse_aadhaar_fallback_from_filename(filename)
-            else:
-                data = _fallback_generic_result(fmt, fallback, filename)
+            data = _fallback_generic_result(fmt, fallback, filename)
 
     try:
         # Stamp it as generic_document detected agent type
@@ -344,25 +321,14 @@ def _fallback_generic_result(fmt: dict, fallback: dict = None, filename: str = N
         }
         
         name_from_file = _extract_name_from_filename(filename) if filename else None
-        if not name_from_file or name_from_file.lower() in ["image", "upload", "document", "file", "pic", "photo"]:
-            name_from_file = "Sanjana Sk"
-            
-        if "extracted_details" in res and "Name" in res["extracted_details"]:
-            old_name = res["extracted_details"]["Name"]
-            res["extracted_details"]["Name"] = name_from_file
-            if "title" in res:
-                res["title"] = res["title"].replace(old_name, name_from_file)
-            if "summary" in res:
-                res["summary"] = res["summary"].replace(old_name, name_from_file)
-                
-            if name_from_file == "Sanjana Sk":
-                res["extracted_details"].update({
-                    "Aadhaar Number": "9171 7214 0145",
-                    "Date of Birth": "06/01/2006",
-                    "Gender": "Female",
-                    "Address": "D/O Krishna Raj. Bharathi Street, VTC: Sringeri, PO: Sringeri, District: Chikmagalur, State: Karnataka, PIN Code: 577139",
-                    "Phone Number": "9110215072"
-                })
+        if name_from_file and name_from_file.lower() not in ["image", "upload", "document", "file", "pic", "photo"]:
+            if "extracted_details" in res and "Name" in res["extracted_details"]:
+                old_name = res["extracted_details"]["Name"]
+                res["extracted_details"]["Name"] = name_from_file
+                if "title" in res:
+                    res["title"] = res["title"].replace(old_name, name_from_file)
+                if "summary" in res:
+                    res["summary"] = res["summary"].replace(old_name, name_from_file)
         return res
         
     title_name = filename if filename else "Generic Document"
