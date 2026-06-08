@@ -307,29 +307,21 @@ def _fallback_generic_result(fmt: dict, fallback: dict = None, filename: str = N
     is_aadhaar_file = any(k in filename_lower for k in ["adhar", "aadhaar", "uidai"])
     
     if is_aadhaar_file:
-        res = json.loads(json.dumps(fallback)) if fallback else {
-            "document_type": "Identity Document (Aadhaar Card)",
-            "title": "Aadhaar Card of Amit Kumar",
-            "summary": "Government of India Aadhaar Card national identity document containing Amit Kumar's details.",
-            "extracted_details": {
-                "Name": "Amit Kumar",
-                "Aadhaar Number": "5489-1204-7762",
-                "Date of Birth": "12/04/1990",
-                "Gender": "Male",
-                "Address": "12, MG Road, Bengaluru, Karnataka - 560001"
-            }
-        }
-        
         name_from_file = _extract_name_from_filename(filename) if filename else None
+        details = {
+            "File Name": filename if filename else "Aadhaar Card Image",
+            "Status": "Analyzed locally",
+            "Message": "Visual analysis is not available for image files when Gemini is offline."
+        }
         if name_from_file and name_from_file.lower() not in ["image", "upload", "document", "file", "pic", "photo"]:
-            if "extracted_details" in res and "Name" in res["extracted_details"]:
-                old_name = res["extracted_details"]["Name"]
-                res["extracted_details"]["Name"] = name_from_file
-                if "title" in res:
-                    res["title"] = res["title"].replace(old_name, name_from_file)
-                if "summary" in res:
-                    res["summary"] = res["summary"].replace(old_name, name_from_file)
-        return res
+            details["Name"] = name_from_file
+            
+        return {
+            "document_type": "Identity Document (Aadhaar Card)",
+            "title": "Aadhaar Card" + (f" of {name_from_file}" if name_from_file else ""),
+            "summary": "Government of India Aadhaar Card national identity document" + (f" containing {name_from_file}'s details" if name_from_file else "") + ".",
+            "extracted_details": details
+        }
         
     title_name = filename if filename else "Generic Document"
     return {
