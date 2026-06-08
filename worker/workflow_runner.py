@@ -6,6 +6,7 @@ from typing import Dict, Any, List
 from process_video import download_video, extract_audio, extract_frames, analyze_with_ai
 from agents.resume_agent import analyze_resume
 from agents.report_agent import analyze_report
+from agents.generic_agent import analyze_generic_document
 
 class WorkflowRunner:
     def __init__(self, workflows_file: str = None):
@@ -104,8 +105,13 @@ class WorkflowRunner:
                     data = json.loads(result_text.strip())
                     classification = data.get("classification", "other").lower().strip()
                 except Exception as e:
-                    print(f"[WorkflowRunner] Gemini image classification failed ({e}). Defaulting to resume.")
-                    classification = "resume"
+                    print(f"[WorkflowRunner] Gemini image classification failed ({e}). Defaulting to other/filename check.")
+                    classification = "other"
+                    filename = (job_data.get("original_filename") or "").lower()
+                    if any(k in filename for k in ["resume", "cv"]):
+                        classification = "resume"
+                    elif any(k in filename for k in ["report", "summary", "finding"]):
+                        classification = "report"
                 
                 if classification not in ("resume", "report", "video"):
                     classification = "other"
@@ -170,6 +176,14 @@ class WorkflowRunner:
             
             if classification not in ("resume", "report", "video"):
                 classification = "other"
+            
+            # Filename-based fallback if classification is still other
+            if classification == "other":
+                filename = (job_data.get("original_filename") or "").lower()
+                if any(k in filename for k in ["resume", "cv"]):
+                    classification = "resume"
+                elif any(k in filename for k in ["report", "summary", "finding"]):
+                    classification = "report"
             
             print(f"[WorkflowRunner] File classified as: {classification}")
             return {"classification": classification}
@@ -304,7 +318,8 @@ class WorkflowRunner:
                     system_prompt_template=system_prompt_template,
                     context_prompt=context_prompt,
                     fallback=fallback,
-                    model_name=model_name
+                    model_name=model_name,
+                    original_filename=job_data.get("original_filename")
                 )
             elif agent_type == "report":
                 return analyze_report(
@@ -314,7 +329,19 @@ class WorkflowRunner:
                     system_prompt_template=system_prompt_template,
                     context_prompt=context_prompt,
                     fallback=fallback,
-                    model_name=model_name
+                    model_name=model_name,
+                    original_filename=job_data.get("original_filename")
+                )
+            elif agent_type == "other":
+                return analyze_generic_document(
+                    file_path=file_path,
+                    job_id=job_id,
+                    format_id=format_id or "generic_document",
+                    system_prompt_template=system_prompt_template,
+                    context_prompt=context_prompt,
+                    fallback=fallback,
+                    model_name=model_name,
+                    original_filename=job_data.get("original_filename")
                 )
             else:
                 raise ValueError(f"Unknown document agent type: {agent_type}")

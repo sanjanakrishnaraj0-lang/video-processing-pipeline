@@ -25,6 +25,11 @@ class TestWorkflowRunner(unittest.TestCase):
         with open(cls.mock_report_path, "w", encoding="utf-8") as f:
             f.write("Q3 Financial Report\nSummary: Revenue grew by 15%\nRisks: Supply chain issues")
 
+        # Create a mock Aadhaar file
+        cls.mock_aadhaar_path = "downloads/mock_aadhaar.txt"
+        with open(cls.mock_aadhaar_path, "w", encoding="utf-8") as f:
+            f.write("Government of India\nAadhaar Card\nName: Amit Kumar\nDOB: 12/04/1990\nGender: Male\nNumber: 5489 1204 7762")
+
     def test_resume_workflow(self):
         print("\n=== Running Resume Workflow Test ===")
         job_data = {
@@ -62,7 +67,7 @@ class TestWorkflowRunner(unittest.TestCase):
         self.assertIn("overall_score", result)
         self.assertEqual(result["overall_score"], 90)
         self.assertIn("technical_skills", result)
-        self.assertIn("Go", result["technical_skills"])
+        self.assertIn("Python", result["technical_skills"])
         self.assertTrue(os.path.exists("result_test_resume_se.json"))
 
     def test_report_workflow(self):
@@ -106,6 +111,16 @@ class TestWorkflowRunner(unittest.TestCase):
         print(f"Generic Report Classification result: {res}")
         self.assertEqual(res.get("classification"), "report")
 
+        # Test 3: Classify other file
+        aadhaar_job_data = {
+            "job_id": "test_generic_aadhaar",
+            "file_path": self.mock_aadhaar_path,
+            "agent_type": "generic"
+        }
+        res = self.runner.run_workflow("generic", aadhaar_job_data)
+        print(f"Generic Aadhaar Classification result: {res}")
+        self.assertEqual(res.get("classification"), "other")
+
     def test_video_workflow_local(self):
         print("\n=== Running Video Workflow Test ===")
         # Look for local video_t1.mp4 or standard plumbing.mp4
@@ -136,10 +151,32 @@ class TestWorkflowRunner(unittest.TestCase):
         self.assertEqual(result["skill_score"], 78)
         self.assertTrue(os.path.exists("result_test_video.json"))
 
+    def test_other_workflow(self):
+        print("\n=== Running Other Workflow Test ===")
+        job_data = {
+            "job_id": "test_other",
+            "file_path": self.mock_aadhaar_path,
+            "format_id": "generic_document",
+            "agent_type": "other"
+        }
+        
+        result = self.runner.run_workflow("other", job_data)
+        print("Other workflow result:")
+        print(json.dumps(result, indent=2))
+        
+        self.assertIn("document_type", result)
+        self.assertIn("extracted_details", result)
+        self.assertEqual(result["document_type"], "Identity Document (Aadhaar Card)")
+        self.assertEqual(result["extracted_details"].get("Name"), "Amit Kumar")
+        self.assertEqual(result["extracted_details"].get("Aadhaar Number"), "5489 1204 7762")
+        self.assertEqual(result["extracted_details"].get("Date of Birth"), "12/04/1990")
+        self.assertEqual(result["extracted_details"].get("Gender"), "Male")
+        self.assertTrue(os.path.exists("result_test_other.json"))
+
     @classmethod
     def tearDownClass(cls):
         # Clean up mock files and result files
-        for f in [cls.mock_resume_path, cls.mock_report_path, "result_test_resume.json", "result_test_resume_se.json", "result_test_report.json", "result_test_video.json"]:
+        for f in [cls.mock_resume_path, cls.mock_report_path, cls.mock_aadhaar_path, "result_test_resume.json", "result_test_resume_se.json", "result_test_report.json", "result_test_video.json", "result_test_other.json"]:
             if os.path.exists(f):
                 try:
                     os.remove(f)

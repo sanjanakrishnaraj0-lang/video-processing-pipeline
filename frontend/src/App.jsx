@@ -538,6 +538,62 @@ function App() {
                   </div>
                 </div>
               )}
+
+              {detectedType === 'other' && (
+                <div className="dashboard-grid">
+                  <div className="glass card full-width">
+                    <div className="card-header">
+                      <FileText size={24} color="var(--accent)" />
+                      <h3>Document Info</h3>
+                    </div>
+                    <div style={{ marginTop: '15px' }}>
+                      <strong style={{ fontSize: '1.25rem', color: 'var(--text)' }}>
+                        {resultData.title || 'Untitled Document'}
+                      </strong>
+                      <div style={{ marginTop: '8px', color: 'var(--accent)', fontWeight: '600', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '0.05em' }}>
+                        {resultData.document_type || 'Generic Document'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="glass card full-width">
+                    <div className="card-header">
+                      <BookOpen size={24} color="var(--accent)" />
+                      <h3>Document Summary</h3>
+                    </div>
+                    <p style={{ marginTop: '15px', lineHeight: '1.6', fontSize: '1.05rem', color: 'var(--text-dim)' }}>
+                      {resultData.summary}
+                    </p>
+                  </div>
+
+                  <div className="glass card full-width">
+                    <div className="card-header">
+                      <CheckCircle size={24} color="var(--success)" />
+                      <h3>Extracted Details</h3>
+                    </div>
+                    <div style={{ marginTop: '15px', overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '400px' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                            <th style={{ padding: '12px 8px', color: 'var(--text-muted)', fontWeight: '600', fontSize: '0.9rem', width: '30%' }}>Field</th>
+                            <th style={{ padding: '12px 8px', color: 'var(--text-muted)', fontWeight: '600', fontSize: '0.9rem' }}>Value</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(resultData.extracted_details || {}).map(([key, val], idx) => (
+                            <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
+                              <td style={{ padding: '12px 8px', fontWeight: '600', color: 'var(--text-dim)', fontSize: '0.9rem' }}>{key}</td>
+                              <td style={{ padding: '12px 8px', color: 'var(--text)', fontSize: '0.9rem', lineHeight: '1.5' }}>
+                                {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })()

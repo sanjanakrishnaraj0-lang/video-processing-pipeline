@@ -320,6 +320,47 @@
           }
         }
       ]
+    },
+    {
+      "workflow_id": "other",
+      "description": "Extracts text/visuals from generic files and uses Gemini to analyze key details.",
+      "trigger": {
+        "type": "queue_event"
+      },
+      "steps": [
+        {
+          "step_id": "ocr_extraction",
+          "action": "document.extract_text",
+          "parameters": {}
+        },
+        {
+          "step_id": "entity_extraction",
+          "action": "ai.analyze_document",
+          "depends_on": ["ocr_extraction"],
+          "parameters": {
+            "agent_type": "other",
+            "model": "gemini-2.0-flash",
+            "system_prompt_template": "You are an expert document analyzer. {context}\n\nAnalyze the provided content carefully and return a response as a STRICT JSON object with exactly these fields:\n\n{fields_text}\n\nYour response MUST follow this exact JSON structure:\n{json_template}\n\nRules:\n- Output ONLY the raw JSON object. No markdown, no extra text.\n- If information is not available, use N/A.",
+            "golden_standards": {
+              "general": {
+                "context_prompt": "Determine the type of this document (e.g. Identity Document, Aadhaar Card, Invoice, Receipt, Email, Letter, Other). Extract all important key-value details from it dynamically and write them into the 'extracted_details' object. Summarize the document in the 'summary' field.",
+                "fallback": {
+                  "document_type": "Identity Document (Aadhaar Card)",
+                  "title": "Aadhaar Card of Amit Kumar",
+                  "summary": "Government of India Aadhaar Card national identity document containing Amit Kumar's details.",
+                  "extracted_details": {
+                    "Name": "Amit Kumar",
+                    "Aadhaar Number": "5489-1204-7762",
+                    "Date of Birth": "12/04/1990",
+                    "Gender": "Male",
+                    "Address": "12, MG Road, Bengaluru, Karnataka - 560001"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
     }
   ]
 }

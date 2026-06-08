@@ -51,6 +51,17 @@ DEFAULT_FORMATS = [
             {"key": "sentiment",        "label": "Overall Sentiment",       "type": "text",   "description": "Positive / Neutral / Negative"},
             {"key": "confidence_score", "label": "Confidence Score (0-100)","type": "number", "description": "AI confidence in analysis"}
         ]
+    },
+    {
+        "id": "generic_document",
+        "name": "Generic Document Analysis",
+        "agent_type": "other",
+        "fields": [
+            {"key": "document_type",     "label": "Document Type",      "type": "text",   "description": "Category of the document (e.g. Identity Document, Aadhaar Card, Invoice, Receipt, Other)"},
+            {"key": "title",             "label": "Document Title",     "type": "text",   "description": "A clear title for the document"},
+            {"key": "summary",           "label": "Document Summary",   "type": "text",   "description": "Executive summary of the document contents"},
+            {"key": "extracted_details", "label": "Extracted Details",  "type": "object", "description": "Key-value pair dictionary of important extracted details from the document"}
+        ]
     }
 ]
 
@@ -157,6 +168,8 @@ def build_prompt_for_format(fmt: Dict[str, Any], context: str = "", system_promp
             json_example_lines.append(
                 f'  "{key}": [{{"question": "...", "options": ["A","B","C","D"], "answer": "A"}}]'
             )
+        elif ftype in ("object", "dict"):
+            json_example_lines.append(f'  "{key}": {{"key1": "val1", "key2": "val2"}}')
         else:
             json_example_lines.append(f'  "{key}": "..."')
 
