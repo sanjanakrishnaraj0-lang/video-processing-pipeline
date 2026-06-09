@@ -345,16 +345,10 @@
               "general": {
                 "context_prompt": "Determine the type of this document (e.g. Identity Document, Aadhaar Card, Invoice, Receipt, Email, Letter, Other). Extract all important key-value details from it dynamically and write them into the 'extracted_details' object. Summarize the document in the 'summary' field.",
                 "fallback": {
-                  "document_type": "Identity Document (Aadhaar Card)",
-                  "title": "Aadhaar Card",
-                  "summary": "Government of India Aadhaar Card national identity document.",
-                  "extracted_details": {
-                    "Name": "N/A",
-                    "Aadhaar Number": "5489-1204-7762",
-                    "Date of Birth": "12/04/1990",
-                    "Gender": "Male",
-                    "Address": "12, MG Road, Bengaluru, Karnataka - 560001"
-                  }
+                  "document_type": "Generic Document",
+                  "title": "Generic Document",
+                  "summary": "A generic document.",
+                  "extracted_details": {}
                 }
               }
             }
