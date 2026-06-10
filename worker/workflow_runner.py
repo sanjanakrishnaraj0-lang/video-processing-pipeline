@@ -80,19 +80,19 @@ class WorkflowRunner:
             if ext in (".jpg", ".jpeg", ".png"):
                 try:
                     import google.generativeai as genai
-                    mime_type = "image/jpeg" if ext in (".jpg", ".jpeg") else "image/png"
-                    uploaded = genai.upload_file(file_path, mime_type=mime_type)
+                    import PIL.Image
+                    img = PIL.Image.open(file_path)
                     
                     system_prompt = params.get("system_prompt", "You are an expert document classifier.")
                     prompt_template = params.get("prompt_template", "Classify the following text snippet:\n\n{text_snippet}\n\nRespond with a raw JSON object containing a single field 'classification' which must be one of: 'resume', 'report', or 'other'. Example: {\"classification\": \"resume\"}")
                     prompt = prompt_template.replace("{text_snippet}", "Analyze this uploaded document image.")
                     
-                    model_name = params.get("model", "gemini-1.5-flash-latest")
+                    model_name = params.get("model", "gemini-2.0-flash")
                     model = genai.GenerativeModel(
                         model_name,
                         system_instruction=system_prompt
                     )
-                    response = model.generate_content([prompt, uploaded])
+                    response = model.generate_content([prompt, img])
                     result_text = response.text.strip()
                     
                     if result_text.startswith("```json"):
