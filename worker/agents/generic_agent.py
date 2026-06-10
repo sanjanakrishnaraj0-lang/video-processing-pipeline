@@ -267,14 +267,18 @@ def _analyze_with_gemini(file_path: str, ext: str, prompt: str, model_name: str 
     """Route file to the right text extractor then send to Gemini."""
     model = genai.GenerativeModel(model_name)
 
-    if ext in (".pdf", ".jpg", ".jpeg", ".png"):
-        print("[GenericAgent] Uploading document to Gemini...")
-        mime_type = "application/pdf" if ext == ".pdf" else ("image/jpeg" if ext in (".jpg", ".jpeg") else "image/png")
-        uploaded = genai.upload_file(file_path, mime_type=mime_type)
+    if ext == ".pdf":
+        print("[GenericAgent] Uploading PDF document to Gemini...")
+        uploaded = genai.upload_file(file_path, mime_type="application/pdf")
         while uploaded.state.name == "PROCESSING":
             time.sleep(2)
             uploaded = genai.get_file(uploaded.name)
         contents = [prompt, uploaded]
+    elif ext in (".jpg", ".jpeg", ".png"):
+        print("[GenericAgent] Loading image for Gemini...")
+        import PIL.Image
+        img = PIL.Image.open(file_path)
+        contents = [prompt, img]
     else:
         # Extract text based on file format
         text = ""

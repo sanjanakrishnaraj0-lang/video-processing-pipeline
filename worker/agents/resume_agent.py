@@ -257,16 +257,18 @@ def _analyze_with_gemini(file_path: str, ext: str, prompt: str, model_name: str 
     """Upload file to Gemini and get analysis."""
     model = genai.GenerativeModel(model_name)
 
-    if ext in (".pdf", ".jpg", ".jpeg", ".png"):
-        # Upload PDF or Image directly to Gemini File API
-        print(f"[ResumeAgent] Uploading document to Gemini...")
-        mime_type = "application/pdf" if ext == ".pdf" else ("image/jpeg" if ext in (".jpg", ".jpeg") else "image/png")
-        uploaded = genai.upload_file(file_path, mime_type=mime_type)
-        # Wait for processing
+    if ext == ".pdf":
+        print(f"[ResumeAgent] Uploading PDF document to Gemini...")
+        uploaded = genai.upload_file(file_path, mime_type="application/pdf")
         while uploaded.state.name == "PROCESSING":
             time.sleep(2)
             uploaded = genai.get_file(uploaded.name)
         contents = [prompt, uploaded]
+    elif ext in (".jpg", ".jpeg", ".png"):
+        print(f"[ResumeAgent] Loading image for Gemini...")
+        import PIL.Image
+        img = PIL.Image.open(file_path)
+        contents = [prompt, img]
 
     elif ext in (".docx", ".doc"):
         # Extract text and send as plain text
