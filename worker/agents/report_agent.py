@@ -173,7 +173,7 @@ def analyze_report(
     system_prompt_template: Optional[str] = None,
     context_prompt: Optional[str] = None,
     fallback: Optional[Dict[str, Any]] = None,
-    model_name: str = "gemini-2.0-flash",
+    model_name: str = "gemini-2.5-flash",
     original_filename: Optional[str] = None
 ) -> dict:
     """
@@ -219,7 +219,7 @@ def analyze_report(
     return data
 
 
-def _analyze_with_gemini(file_path: str, ext: str, prompt: str, model_name: str = "gemini-2.0-flash") -> dict:
+def _analyze_with_gemini(file_path: str, ext: str, prompt: str, model_name: str = "gemini-2.5-flash") -> dict:
     """Route file to the right text extractor then send to Gemini."""
     model = genai.GenerativeModel(model_name)
 

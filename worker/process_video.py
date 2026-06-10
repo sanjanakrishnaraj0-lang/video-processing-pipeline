@@ -97,7 +97,7 @@ def analyze_with_ai(
     system_prompt_template: Optional[str] = None,
     context_prompt: Optional[str] = None,
     fallback: Optional[Dict[str, Any]] = None,
-    model_name: str = "gemini-2.0-flash"
+    model_name: str = "gemini-2.5-flash"
 ) -> Optional[Dict[str, Any]]:
     """
     Analyze video frames + audio with Gemini using a custom or default output format.

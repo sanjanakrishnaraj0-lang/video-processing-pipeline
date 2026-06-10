@@ -87,7 +87,7 @@ class WorkflowRunner:
                     prompt_template = params.get("prompt_template", "Classify the following text snippet:\n\n{text_snippet}\n\nRespond with a raw JSON object containing a single field 'classification' which must be one of: 'resume', 'report', or 'other'. Example: {\"classification\": \"resume\"}")
                     prompt = prompt_template.replace("{text_snippet}", "Analyze this uploaded document image.")
                     
-                    model_name = params.get("model", "gemini-2.0-flash")
+                    model_name = params.get("model", "gemini-2.5-flash")
                     model = genai.GenerativeModel(
                         model_name,
                         system_instruction=system_prompt
@@ -241,7 +241,7 @@ class WorkflowRunner:
             
             # Resolve custom prompts and fallbacks from workflows.json parameters
             system_prompt_template = params.get("system_prompt_template")
-            model_name = params.get("model", "gemini-2.0-flash")
+            model_name = params.get("model", "gemini-2.5-flash")
             golden_standards = params.get("golden_standards", {})
             standard_info = golden_standards.get(golden_standard or "general", golden_standards.get("general", {}))
             
@@ -299,7 +299,7 @@ class WorkflowRunner:
 
             agent_type = params.get("agent_type", "resume")
             system_prompt_template = params.get("system_prompt_template")
-            model_name = params.get("model", "gemini-2.0-flash")
+            model_name = params.get("model", "gemini-2.5-flash")
 
             golden_standards = params.get("golden_standards", {})
             if golden_standards:

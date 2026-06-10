@@ -41,7 +41,7 @@
           "action": "ai.analyze_video",
           "depends_on": ["download_media", "extract_audio", "extract_frames"],
           "parameters": {
-            "model": "gemini-2.0-flash",
+            "model": "gemini-2.5-flash",
             "system_prompt_template": "You are an expert AI analyst. {context}\n\nAnalyze the provided content carefully and return a response as a STRICT JSON object with exactly these fields:\n\n{fields_text}\n\nYour response MUST follow this exact JSON structure:\n{json_template}\n\nRules:\n- Output ONLY the raw JSON object. No markdown, no explanation, no extra text.\n- All list fields must be arrays of strings.\n- All number fields must be integers or floats.\n- If information is not available, use an empty list [] or 0 or \"N/A\" as appropriate.",
             "golden_standards": {
               "general": {
@@ -211,7 +211,7 @@
           "depends_on": ["ocr_extraction"],
           "parameters": {
             "agent_type": "resume",
-            "model": "gemini-2.0-flash",
+            "model": "gemini-2.5-flash",
             "system_prompt_template": "You are an expert AI analyst. {context}\n\nAnalyze the provided content carefully and return a response as a STRICT JSON object with exactly these fields:\n\n{fields_text}\n\nYour response MUST follow this exact JSON structure:\n{json_template}\n\nRules:\n- Output ONLY the raw JSON object. No markdown, no explanation, no extra text.\n- All list fields must be arrays of strings.\n- All number fields must be integers or floats.\n- If information is not available, use an empty list [] or 0 or \"N/A\" as appropriate.",
             "golden_standards": {
               "general": {
@@ -274,7 +274,7 @@
           "depends_on": ["ocr_extraction"],
           "parameters": {
             "agent_type": "report",
-            "model": "gemini-2.0-flash",
+            "model": "gemini-2.5-flash",
             "system_prompt_template": "You are an expert AI analyst. {context}\n\nAnalyze the provided content carefully and return a response as a STRICT JSON object with exactly these fields:\n\n{fields_text}\n\nYour response MUST follow this exact JSON structure:\n{json_template}\n\nRules:\n- Output ONLY the raw JSON object. No markdown, no explanation, no extra text.\n- All list fields must be arrays of strings.\n- All number fields must be integers or floats.\n- If information is not available, use an empty list [] or 0 or \"N/A\" as appropriate.",
             "context_prompt": "You are analyzing a business or technical REPORT document.",
             "fallback": {
@@ -314,7 +314,7 @@
           "step_id": "classify_file",
           "action": "ai.classify_file",
           "parameters": {
-            "model": "gemini-2.0-flash",
+            "model": "gemini-2.5-flash",
             "system_prompt": "You are an expert document classifier. Analyze the provided document text and classify it as either 'resume', 'report', or 'other'.",
             "prompt_template": "Classify the following text snippet:\n\n{text_snippet}\n\nRespond with a raw JSON object containing a single field 'classification' which must be one of: 'resume', 'report', or 'other'. Example: {\"classification\": \"resume\"}"
           }
@@ -339,7 +339,7 @@
           "depends_on": ["ocr_extraction"],
           "parameters": {
             "agent_type": "other",
-            "model": "gemini-2.0-flash",
+            "model": "gemini-2.5-flash",
             "system_prompt_template": "You are an expert document analyzer. {context}\n\nAnalyze the provided content carefully and return a response as a STRICT JSON object with exactly these fields:\n\n{fields_text}\n\nYour response MUST follow this exact JSON structure:\n{json_template}\n\nRules:\n- Output ONLY the raw JSON object. No markdown, no extra text.\n- If information is not available, use N/A.",
             "golden_standards": {
               "general": {

@@ -205,7 +205,7 @@ def analyze_resume(
     system_prompt_template: Optional[str] = None,
     context_prompt: Optional[str] = None,
     fallback: Optional[Dict[str, Any]] = None,
-    model_name: str = "gemini-2.0-flash",
+    model_name: str = "gemini-2.5-flash",
     original_filename: Optional[str] = None
 ) -> dict:
     """
@@ -253,7 +253,7 @@ def analyze_resume(
     return data
 
 
-def _analyze_with_gemini(file_path: str, ext: str, prompt: str, model_name: str = "gemini-2.0-flash") -> dict:
+def _analyze_with_gemini(file_path: str, ext: str, prompt: str, model_name: str = "gemini-2.5-flash") -> dict:
     """Upload file to Gemini and get analysis."""
     model = genai.GenerativeModel(model_name)
 
